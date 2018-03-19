@@ -1,0 +1,7 @@
+#!/usr/bin/python
+import sys
+
+from tcp_forward import tcp_forward
+
+if __name__=='__main__':
+    sys.exit(tcp_forward.main())
