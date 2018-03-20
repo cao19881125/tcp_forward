@@ -51,8 +51,14 @@ ssh usr@221.10.12.23 -p 1234
 
 ```
 git clone https://github.com/cao19881125/tcp_forward.git
-cd tcp_forward.git
+cd tcp_forward
 pip install .
+```
+
+### docker安装
+```
+git clone https://github.com/cao19881125/tcp_forward.git
+docker build -t tcp-forward:1.0 tcp_forward/docker
 ```
 
 ### 配置
@@ -76,6 +82,13 @@ INNER_PORT=1111
 
 
 ### 启动
+#### 创建docker容器（docker运行情况下）
+```
+docker run -t -d --name 'forward_server' --network host bash
+docker exec -it forward_server bash
+docker run -t -d --name 'forward_client' --network host bash
+docker exec -it forward_client bash
+```
 #### server
 - 查看帮助
 ```

@@ -1,0 +1,8 @@
+FROM centos:7
+
+RUN yum install -y epel-release && yum install -y python-pip git iproute &&  yum clean all
+
+RUN git clone https://github.com/cao19881125/tcp_forward.git && cd tcp_forward && pip install .
+
+ENV TERM linux
+
