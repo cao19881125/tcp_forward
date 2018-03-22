@@ -25,6 +25,9 @@ class OuterWorker(object):
     def has_done(self):
         return self.__state == self.State.DONE
 
+    def is_working(self):
+        return self.__state == self.State.WORKING
+
     def handle_event(self,event,inner_connection):
 
         if self.__state == self.State.WORKING:

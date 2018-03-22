@@ -9,14 +9,15 @@ import outer_worker
 from common import epoll_recever
 import inner_worker
 import argparse
+import ConfigParser
 import logging
 from logging.handlers import RotatingFileHandler
 logger = logging.getLogger('my_logger')
 
-def log_config():
+def log_config(level):
     if not os.path.isdir('/var/log/tcp_forward'):
         os.makedirs('/var/log/tcp_forward')
-    logger.setLevel(logging._levelNames['DEBUG'])
+    logger.setLevel(logging._levelNames[level])
     handler = RotatingFileHandler("/var/log/tcp_forward/forward_client.log", maxBytes=10000000, backupCount=10)
     console = logging.StreamHandler()
     formatter = logging.Formatter(
@@ -26,9 +27,14 @@ def log_config():
     logger.addHandler(handler)
     logger.addHandler(console)
 
-def main(outer_ip,outer_port):
-    log_config()
+def main(cfg_file):
+    cfg = ConfigParser.ConfigParser()
+    cfg.readfp(open(cfg_file, 'rb'))
+    log_config(cfg.get('DEFAULT','LOG_LEVEL'))
     logger.info("Process start!")
+
+    outer_ip = cfg.get('DEFAULT','SERVER_IP')
+    outer_port = int(cfg.get('DEFAULT','SERVER_PORT'))
     out_worker = outer_worker.OuterWorker(outer_ip, outer_port)
     recver = epoll_recever.Epoll_receiver()
 
@@ -57,9 +63,10 @@ def main(outer_ip,outer_port):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("server_ip", help="server ip")
-    parser.add_argument("server_port", help="server port")
+    #parser.add_argument("server_ip", help="server ip")
+    #parser.add_argument("server_port", help="server port")
+    parser.add_argument("cfg_file", help="config file")
 
     args = parser.parse_args()
 
-    sys.exit(main(args.server_ip, int(args.server_port)))
+    sys.exit(main(args.cfg_file))

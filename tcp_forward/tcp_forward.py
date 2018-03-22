@@ -17,14 +17,15 @@ def main():
     server_mode.add_argument('cfg_file',help='config file path')
 
     client_mode = subparsers.add_parser('client',help='client mode')
-    client_mode.add_argument('server_ip',help='server ip')
-    client_mode.add_argument('server_port',type=int,help='server port')
+    server_mode.add_argument('cfg_file', help='config file path')
+    #client_mode.add_argument('server_ip',help='server ip')
+    #client_mode.add_argument('server_port',type=int,help='server port')
 
     args = parser.parse_args()
     if args.mode == 'server':
         server_main(args.cfg_file)
     elif args.mode == 'client':
-        client_main(args.server_ip,args.server_port)
+        client_main(args.cfg_file)
 
 
 

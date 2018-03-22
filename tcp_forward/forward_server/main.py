@@ -115,10 +115,10 @@ def run(cfg):
                     continue
 
 
-def log_config():
+def log_config(level):
     if not os.path.isdir('/var/log/tcp_forward'):
         os.makedirs('/var/log/tcp_forward')
-    logger.setLevel(logging._levelNames['DEBUG'])
+    logger.setLevel(logging._levelNames[level])
     handler = RotatingFileHandler("/var/log/tcp_forward/forward_server.log", maxBytes=10000000, backupCount=10)
     console = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s %(process)d %(levelname)s %(filename)s:%(lineno)s %(funcName)s [-] %(message)s ')
@@ -129,11 +129,10 @@ def log_config():
 
 def main(cfg_file):
 
-    log_config()
-
-
     cfg = ConfigParser.ConfigParser()
     cfg.readfp(open(cfg_file, 'rb'))
+
+    log_config(cfg.get('DEFAULT','LOG_LEVEL'))
 
     logger.info("Process start!")
     run(cfg)

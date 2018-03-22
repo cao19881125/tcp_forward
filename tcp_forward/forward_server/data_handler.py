@@ -67,7 +67,7 @@ class InnerDataHandler(DataHandler):
                     outer_worker.connecting_reply(True)
             elif parsed_data.data_type == forward_data.DATA_TYPE.TRANS_DATA:
                 outer_worker = worker_manager.get_worker_by_id(parsed_data.id)
-                if outer_worker != None:
+                if outer_worker != None and outer_worker.is_working():
                     outer_worker.trans_data(parsed_data.data)
             elif parsed_data.data_type == forward_data.DATA_TYPE.CLOSE_CONNECTION:
                 outer_worker = worker_manager.get_worker_by_id(parsed_data.id)
