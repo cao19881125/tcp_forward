@@ -63,11 +63,13 @@ docker build -t tcp-forward:1.0 tcp_forward/docker
 
 ### 配置
 #### server
-- 在/etc/tcp-forward/forward_server.cfg中配置forward_client连入的端口
+- 在/etc/tcp-forward/forward_server.cfg中配置forward_client连入的端口，以及日志级别
 
 ```
 [DEFAULT]
 INNER_PORT=1111
+OUTER_PORTS_FILE=/etc/tcp-forward/port_mapper.cfg
+LOG_LEVEL=INFO
 ```
 
 - 在/etc/tcp-forward/port_mapper.cfg中配置外网端口到内网的映射，格式为：外网端口=内网ip:内网端口，如下
@@ -78,7 +80,14 @@ INNER_PORT=1111
 4444=192.168.105:22
 ```
 #### client
-- 暂无配置
+- 在/etc/tcp-forward/forward_client.cfg中配置forward_server的ip和端口以及日志级别
+```
+[DEFAULT]
+SERVER_IP=221.10.12.34
+SERVER_PORT=1111
+LOG_LEVEL=DEBUG
+```
+
 
 
 ### 启动
@@ -90,37 +99,17 @@ docker run -t -d --name 'forward_client' --network host bash
 docker exec -it forward_client bash
 ```
 #### server
-- 查看帮助
-```
-# tcp-forward server -h
-usage: tcp-forward server [-h] cfg_file
 
-positional arguments:
-  cfg_file    config file path
-
-optional arguments:
-  -h, --help  show this help message and exit
-```
-
-- 例如
 ```
 tcp-forward server /etc/tcp-forward/forward_server.cfg
 ```
 #### client
-- 查看帮助
-```
-# tcp-forward client -h
-usage: tcp-forward client [-h] server_ip server_port
 
-positional arguments:
-  server_ip    server ip
-  server_port  server port
-
-optional arguments:
-  -h, --help   show this help message and exit
-```
-- 例如
 
 ```
-tcp-forward client 221.10.12.34 1111
+tcp-forward client /etc/tcp-forward/forward_client.cfg
 ```
+
+
+### 查看日志
+- 日志生成在/var/log/tcp_forward 目录下面
