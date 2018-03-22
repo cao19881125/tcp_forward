@@ -27,6 +27,15 @@ class OuterDataHandler(DataHandler):
                 if __inner_worker != None:
                     __inner_worker.close()
 
+    def send_heart_beat(self,outer_connector):
+        forw_data = forward_data.ForwardData(forward_data.DATA_TYPE.HEART_BEAT, 0,'0.0.0.0', 0, '')
+        protocol_parser = protocol_handler.ProtocolHandler()
+        send_package = protocol_parser.build_data(forw_data)
+        if outer_connector and outer_connector.con_state == connector.CON_STATE.CON_CONNECTED:
+            send_bytes = outer_connector.send(send_package)
+            if send_bytes <= 0:
+                logger.error("HeartBeat send failed")
+                raise Exception("Send HeartBeat failed")
 class InnerDataHandler(DataHandler):
     def tarns_data(self,forward_id,inner_ip,inner_port,data,outer_connector):
 

@@ -5,6 +5,7 @@ class DATA_TYPE(object):
     CONNECTION_SUCCESS = 0x01
     TRANS_DATA = 0x10
     CLOSE_CONNECTION = 0x20
+    HEART_BEAT = 0x30
 
 
 class ForwardData(object):

@@ -1,5 +1,5 @@
 import select
-
+import time
 from enum import Enum
 
 from common import connector, epoll_recever, ring_buffer
@@ -22,6 +22,7 @@ class OuterWorker(object):
         self.__connector = None
         self.__ring_buffer = ring_buffer.RingBuffer(10240 * 10240)
         self.__data_handler = OuterDataHandler()
+        self.__last_heart_beat_time = int(time.time())
 
     def get_fileno(self):
         if self.__connector == None:
@@ -31,6 +32,13 @@ class OuterWorker(object):
 
     def get_connector(self):
         return self.__connector
+
+    def send_heart_beat(self):
+        try:
+            self.__data_handler.send_heart_beat(self.__connector)
+        except Exception,e:
+            logger.error("OuterrWorker current state:WORKING send heartbeat error,change state to DISCONNECTED" )
+            self.__state = self.State.DISCONNECTED
 
     def handle_event(self,recever,event):
 
@@ -54,6 +62,8 @@ class OuterWorker(object):
 
 
     def do_work(self,recever,inner_worker_manager):
+
+
         if self.__state == self.State.NONE:
             #print 'outer_worker:connect to %s %d'%(self.__outer_ip,self.__outer_port)
             self.__connector = connector.ConnectorClient(self.__outer_ip, self.__outer_port)
@@ -73,6 +83,12 @@ class OuterWorker(object):
                 self.__state = self.State.DISCONNECTED
                 logger.debug("OuterWorker current state:WORKING change state to DONE due connector state error:%s"%(str(self.__connector.con_state)) )
                 return
+            else:
+                current_time = time.time()
+                if current_time - self.__last_heart_beat_time >= 30:
+                    self.send_heart_beat()
+                    self.__last_heart_beat_time = current_time
+                    logger.debug("OuterWorker send hearbeat")
         elif self.__state == self.State.DISCONNECTED:
             inner_worker_manager.close_all()
             self.__state = self.State.NONE
@@ -101,7 +117,7 @@ class OuterWorker(object):
         if error_happen:
             self.__connector.close()
             self.__state = self.State.DISCONNECTED
-            logger.debug("OuterWorkercurrent state:WORKING change state to CLOSED")
+            logger.debug("OuterWorkercurrent state:WORKING change state to DISCONNECTED")
 
 
 if __name__ == '__main__':

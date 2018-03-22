@@ -73,3 +73,5 @@ class InnerDataHandler(DataHandler):
                 outer_worker = worker_manager.get_worker_by_id(parsed_data.id)
                 if outer_worker != None:
                     outer_worker.close()
+            elif parsed_data.data_type == forward_data.DATA_TYPE.HEART_BEAT:
+                logger.debug('Recv heartbeat')
