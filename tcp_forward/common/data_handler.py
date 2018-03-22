@@ -19,7 +19,7 @@ class DataHandler(object):
             protocol_parse.del_wrong_header(ring_buffer)
             package = protocol_parse.get_one_complete_package(ring_buffer)
         except protocol_handler.ParseTimeout,e:
-            print 'parse timeout,current buffer:' + ring_buffer.print_buf()
+            print 'parse timeout,current buffer:'
             return None
         except protocol_handler.ParseError,e:
             print 'parse error'

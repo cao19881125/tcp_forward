@@ -4,7 +4,9 @@ from enum import Enum
 
 from common import connector, epoll_recever, ring_buffer
 from data_handler import OuterDataHandler
-
+import logging
+from logging.handlers import RotatingFileHandler
+logger = logging.getLogger('my_logger')
 
 class OuterWorker(object):
     class State(Enum):
@@ -18,7 +20,7 @@ class OuterWorker(object):
         self.__outer_ip = outer_ip
         self.__outer_port = outer_port
         self.__connector = None
-        self.__ring_buffer = ring_buffer.RingBuffer(1024 * 1024)
+        self.__ring_buffer = ring_buffer.RingBuffer(10240 * 10240)
         self.__data_handler = OuterDataHandler()
 
     def get_fileno(self):
@@ -39,12 +41,13 @@ class OuterWorker(object):
             if self.__connector.con_state == connector.CON_STATE.CON_CONNECTED:
                 self.__state = self.State.WORKING
                 recever.change_event(self.__connector.get_fileno(), select.EPOLLIN)
-                print 'outer_worker:connect success'
+                logger.info("OuterWorker connect success change state to WORKING")
 
             elif self.__connector.con_state == connector.CON_STATE.CON_FAILED:
                 self.__connector.close()
                 self.__state = self.State.DISCONNECTED
-                print 'outer_worker:connect failed'
+                logger.error("OuterWorker connect failed,change state to DISCONNECTED")
+
 
         elif self.__state == self.State.WORKING:
             self.__handle_working_event(event)
@@ -52,7 +55,7 @@ class OuterWorker(object):
 
     def do_work(self,recever,inner_worker_manager):
         if self.__state == self.State.NONE:
-            print 'outer_worker:connect to %s %d'%(self.__outer_ip,self.__outer_port)
+            #print 'outer_worker:connect to %s %d'%(self.__outer_ip,self.__outer_port)
             self.__connector = connector.ConnectorClient(self.__outer_ip, self.__outer_port)
             self.__connector.connect()
 
@@ -65,11 +68,16 @@ class OuterWorker(object):
             elif self.__connector.con_state == connector.CON_STATE.CON_CONNECTING:
                 recever.add_receiver(self.__connector.get_fileno(), select.EPOLLOUT)
                 self.__state = self.State.CONNECTING
-
-
+        elif self.__state == self.State.WORKING:
+            if self.__connector.con_state != connector.CON_STATE.CON_CONNECTED:
+                self.__state = self.State.DISCONNECTED
+                logger.debug("OuterWorker current state:WORKING change state to DONE due connector state error:%s"%(str(self.__connector.con_state)) )
+                return
         elif self.__state == self.State.DISCONNECTED:
             inner_worker_manager.close_all()
             self.__state = self.State.NONE
+            logger.debug("OuterWorker current state:DISCONNECTED close all inner_worker,change state to NONE")
+
 
         self.__data_handler.handle_data(self.__ring_buffer,inner_worker_manager)
 
@@ -85,6 +93,7 @@ class OuterWorker(object):
             else:
                 if self.__connector.con_state != connector.CON_STATE.CON_CONNECTED:
                     error_happen = True
+                logger.error("OuterWorker current state:WORKING recv data error")
 
         elif event & select.EPOLLHUP:
             error_happen = True
@@ -92,6 +101,7 @@ class OuterWorker(object):
         if error_happen:
             self.__connector.close()
             self.__state = self.State.DISCONNECTED
+            logger.debug("OuterWorkercurrent state:WORKING change state to CLOSED")
 
 
 if __name__ == '__main__':

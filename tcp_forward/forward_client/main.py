@@ -9,10 +9,30 @@ import outer_worker
 from common import epoll_recever
 import inner_worker
 import argparse
+import logging
+from logging.handlers import RotatingFileHandler
+logger = logging.getLogger('my_logger')
+
+def log_config():
+    if not os.path.isdir('/var/log/tcp_forward'):
+        os.makedirs('/var/log/tcp_forward')
+    logger.setLevel(logging._levelNames['DEBUG'])
+    handler = RotatingFileHandler("/var/log/tcp_forward/forward_client.log", maxBytes=10000000, backupCount=10)
+    console = logging.StreamHandler()
+    formatter = logging.Formatter(
+        '%(asctime)s %(process)d %(levelname)s %(filename)s:%(lineno)s %(funcName)s [-] %(message)s ')
+    handler.setFormatter(formatter)
+    console.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.addHandler(console)
 
 def main(outer_ip,outer_port):
+    log_config()
+    logger.info("Process start!")
     out_worker = outer_worker.OuterWorker(outer_ip, outer_port)
     recver = epoll_recever.Epoll_receiver()
+
+    logger.info("Outer ip:%s:%d"%(outer_ip, outer_port))
 
     __inner_worker_manager = inner_worker_manager.InnerWorkerManager()
 
@@ -30,7 +50,7 @@ def main(outer_ip,outer_port):
                 if __inner_worker != None:
                     __inner_worker.handle_event(recver,event,out_worker.get_connector())
                 else:
-                    print 'can not get fileno:%d inner_worker,unregister it'%(fileno)
+                    logger.error("Can't get fileno:%d inner_worker,unregister it"%(fileno))
                     epoll_recever.del_receiver(fileno)
 
 

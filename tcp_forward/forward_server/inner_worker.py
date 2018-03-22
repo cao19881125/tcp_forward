@@ -3,6 +3,8 @@ import select
 from common import connector
 from common import ring_buffer
 import data_handler
+import logging
+logger = logging.getLogger('my_logger')
 
 class InnerWorker(object):
     class State(Enum):
@@ -48,6 +50,12 @@ class InnerWorker(object):
             for ow in out_workers:
                 ow.close()
             self.__state = self.State.DONE
+            logger.debug("InnerWorker %d current state:CLOSED change state to DONE" % (self.__worker_id))
+        elif self.__state == self.State.WORKING:
+            if self.__connector.con_state != connector.CON_STATE.CON_CONNECTED:
+                self.__state = self.State.CLOSED
+                logger.debug("InnerWorker %d current state:WORKING change state to CLOSED due connector state error:%s"%(self.__worker_id,str(self.__connector.con_state)) )
+                return
 
         self.__data_handler.handle_data(self.__ring_buffer, worker_manager)
     def __handle_working_event(self, event):
@@ -62,6 +70,7 @@ class InnerWorker(object):
             else:
                 if self.__connector.con_state != connector.CON_STATE.CON_CONNECTED:
                     error_happen = True
+                logger.error("InnerWorker %d current state:WORKING recv data error" % (self.__worker_id))
 
         elif event & select.EPOLLHUP:
             error_happen = True
@@ -69,3 +78,4 @@ class InnerWorker(object):
         if error_happen:
             self.__connector.close()
             self.__state = self.State.CLOSED
+            logger.debug("InnerWorker %d current state:WORKING change state to CLOSED" % (self.__worker_id))

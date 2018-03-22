@@ -14,8 +14,13 @@ import inner_worker
 import outer_worker
 import argparse
 import ConfigParser
+import logging
+from logging.handlers import RotatingFileHandler
 
 port_mapper_changed = False
+
+logger = logging.getLogger('my_logger')
+
 
 def build_outer_acceptors(out_acceptors,_port_mapper,recver):
     out_ports = _port_mapper.get_outer_ports()
@@ -25,7 +30,7 @@ def build_outer_acceptors(out_acceptors,_port_mapper,recver):
         out_acceptors[filno] = _out_acceptor
         _port_mapper.add_fileno_to_port(filno,port)
         recver.add_receiver(filno,select.EPOLLIN)
-        print "Out port listen:" + str(port) + '->' +  str(_port_mapper.get_inner_info_by_out_port(port))
+        logger.info("Out port listen:" + str(port) + '->' +  str(_port_mapper.get_inner_info_by_out_port(port)))
 
 
 def port_mapper_change_callback():
@@ -37,8 +42,10 @@ def run(cfg):
     recver = epoll_recever.Epoll_receiver()
 
     # just one inner acceptor
-    inner_acceptor = acceptor.Acceptor('0.0.0.0', int(cfg.get('DEFAULT','INNER_PORT')))
+    inner_port = int(cfg.get('DEFAULT','INNER_PORT'))
+    inner_acceptor = acceptor.Acceptor('0.0.0.0', inner_port)
     recver.add_receiver(inner_acceptor.get_fileno(), select.EPOLLIN)
+    logger.info('Inner port listen:' + str(inner_port))
 
     # there are many outer acceptor
     _port_mapper = port_mapper.PortMapper(cfg.get('DEFAULT','OUTER_PORTS_FILE'), port_mapper_change_callback)
@@ -57,7 +64,7 @@ def run(cfg):
                 _port_mapper.del_fileno_to_port(acc_fileno)
                 acc.close()
             out_acceptors.clear()
-            print 'clear current outport listeners'
+            logger.info('Port mapper changed,clear current outport listeners,recreating')
             build_outer_acceptors(out_acceptors, _port_mapper, recver)
             port_mapper_changed = False
 
@@ -71,7 +78,7 @@ def run(cfg):
                 _inner_socket.setblocking(0)
                 _worker_manager.add_inner_worker(_inner_socket)
                 recver.add_receiver(_inner_socket.fileno(), select.EPOLLIN)
-                print 'inner socket accept'
+                logger.info('Inner socket accept')
 
             elif out_acceptors.has_key(fileno):
                 # recv outer connection
@@ -82,9 +89,10 @@ def run(cfg):
                     _outer_socket.close()
                     continue
                 try:
-                    _worker_manager.add_outer_worker(_outer_socket, _inner_ip, _inner_port)
+                    _outer_worker = _worker_manager.add_outer_worker(_outer_socket, _inner_ip, _inner_port)
                     recver.add_receiver(_outer_socket.fileno(), select.EPOLLIN)
-                    print 'outer socket accept'
+                    logger.info("Outer socket accept, worker_id:%d fileno:%d to inner port:%s:%d"%
+                                (_outer_worker.get_worker_id(),_outer_socket.fileno(),_inner_ip,_inner_port))
                 except Exception, e:
                     _outer_socket.close()
                     continue
@@ -98,6 +106,7 @@ def run(cfg):
                 if _out_worker:
                     _inner_worker = _worker_manager.get_pair_inner_worker(_out_worker.get_worker_id())
                     if _inner_worker == None:
+                        logger.error("OuterWorker %d get paired InnerWorker failed,remove"%(_out_worker.get_worker_id()))
                         _out_worker.close()
                         _worker_manager.remove_outer_worker(_out_worker.get_worker_id())
                         continue
@@ -106,12 +115,27 @@ def run(cfg):
                     continue
 
 
+def log_config():
+    if not os.path.isdir('/var/log/tcp_forward'):
+        os.makedirs('/var/log/tcp_forward')
+    logger.setLevel(logging._levelNames['DEBUG'])
+    handler = RotatingFileHandler("/var/log/tcp_forward/forward_server.log", maxBytes=10000000, backupCount=10)
+    console = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s %(process)d %(levelname)s %(filename)s:%(lineno)s %(funcName)s [-] %(message)s ')
+    handler.setFormatter(formatter)
+    console.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.addHandler(console)
+
 def main(cfg_file):
+
+    log_config()
 
 
     cfg = ConfigParser.ConfigParser()
     cfg.readfp(open(cfg_file, 'rb'))
 
+    logger.info("Process start!")
     run(cfg)
 
 

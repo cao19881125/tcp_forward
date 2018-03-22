@@ -34,6 +34,7 @@ class WorkerManager(object):
 
         self.add_map(_worker_id, _paired_inner_worker.get_worker_id())
         self.__outer_workers[_worker_id] = _outer_worker
+        return _outer_worker
 
     def add_inner_worker(self,inner_socket):
 

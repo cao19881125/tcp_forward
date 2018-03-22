@@ -18,8 +18,9 @@ class Connector(object):
         self._fileno = self._socket.fileno()
 
     def close(self):
-        self._socket.close()
-        self.con_state == CON_STATE.CON_CLOSED
+        if self.con_state != CON_STATE.CON_CLOSED:
+            self._socket.close()
+            self.con_state == CON_STATE.CON_CLOSED
 
     def recv(self):
         if self.con_state != CON_STATE.CON_CONNECTED:
@@ -42,13 +43,20 @@ class Connector(object):
                     return recv_msg
                 else:
                     # connect closed
+                    self._socket.close()
                     self.con_state = CON_STATE.CON_CLOSED
                     return ''
 
     def send(self,msg):
-        self._socket.setblocking(1)
-        self._socket.send(msg)
-        self._socket.setblocking(0)
+        try:
+            self._socket.setblocking(1)
+            send_bytes = self._socket.send(msg)
+            self._socket.setblocking(0)
+            return send_bytes
+        except Exception,e:
+            self._socket.close()
+            self.con_state = CON_STATE.CON_CLOSED
+            return 0
 
     def get_fileno(self):
         return self._fileno

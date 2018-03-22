@@ -8,7 +8,6 @@ class Epoll_receiver(object):
         self.__epoll = select.epoll()
 
     def add_receiver(self,fd,events):
-        print 'add_receiver :' + str(fd)
         self.__recv_fds[fd] = events
         self.__epoll.register(fd, events)
 
