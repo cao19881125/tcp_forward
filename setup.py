@@ -18,6 +18,6 @@ setup(
     include_package_data = True,
     platforms = "any",
     install_requires = ['enum','argparse','ConfigParser','pyinotify'],
-    data_files = [('/etc/tcp-forward',['./forward_server.cfg','./port_mapper.cfg'])],
+    data_files = [('/etc/tcp-forward',['./forward_server.cfg','./forward_client.cfg','./port_mapper.cfg'])],
     scripts=['tools/tcp-forward']
 )

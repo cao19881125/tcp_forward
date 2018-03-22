@@ -17,7 +17,7 @@ def main():
     server_mode.add_argument('cfg_file',help='config file path')
 
     client_mode = subparsers.add_parser('client',help='client mode')
-    server_mode.add_argument('cfg_file', help='config file path')
+    client_mode.add_argument('cfg_file', help='config file path')
     #client_mode.add_argument('server_ip',help='server ip')
     #client_mode.add_argument('server_port',type=int,help='server port')
 
