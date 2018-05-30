@@ -29,7 +29,7 @@ class Connector(object):
         recv_msg = ''
         while True:
             try:
-                recv_msg_temp = self._socket.recv(1024)
+                recv_msg_temp = self._socket.recv(1024 * 1024)
                 if len(recv_msg_temp) == 0:
                     # connect closed
                     self.con_state = CON_STATE.CON_CLOSED

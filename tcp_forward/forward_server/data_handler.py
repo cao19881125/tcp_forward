@@ -25,10 +25,10 @@ class OutDataHandler(DataHandler):
         ori = 0
         total_len = len(data)
         while ori < total_len:
-            if total_len - ori <= 10000:
+            if total_len - ori <= 2**31:
                 send_data = data[ori:total_len]
             else:
-                send_data = data[ori:ori + 10000]
+                send_data = data[ori:ori + 2**31]
 
             _protocol_handler = ProtocolHandler()
             forw_data = forward_data.ForwardData(forward_data.DATA_TYPE.TRANS_DATA, forward_id,
@@ -41,7 +41,7 @@ class OutDataHandler(DataHandler):
                     raise Exception("Send data failed")
                 #print 'inner_connector send package'
                 #tools.print_hex_buf(send_package)
-            ori += 10000
+            ori += 2**31
 
 
     def close_connection(self,forward_id,inner_ip,inner_port,inner_connector):

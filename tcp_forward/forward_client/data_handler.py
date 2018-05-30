@@ -42,10 +42,10 @@ class InnerDataHandler(DataHandler):
         ori = 0
         total_len = len(data)
         while ori < total_len:
-            if total_len - ori <= 10000:
+            if total_len - ori <= 2**31:
                 send_data = data[ori:total_len]
             else:
-                send_data = data[ori:ori+10000]
+                send_data = data[ori:ori+2**31]
 
             forw_data = forward_data.ForwardData(forward_data.DATA_TYPE.TRANS_DATA, forward_id,
                                              inner_ip, inner_port, send_data)
@@ -57,7 +57,7 @@ class InnerDataHandler(DataHandler):
                 if send_bytes <= 0:
                     logger.error("TransData send failed,forward_id:%d inner_ip:%s inner_port:%d"%(forward_id,inner_ip,inner_port))
                     raise Exception("Send data failed")
-            ori += 10000
+            ori += 2**31
 
     def inner_closed(self,forward_id,inner_ip,inner_port,outer_connector):
         close_data = forward_data.ForwardData()

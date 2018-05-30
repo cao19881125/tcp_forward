@@ -48,7 +48,7 @@ class ProtocolHandler(object):
         msg = data.data
 
         msg_len = len(msg)
-        buf_len = 17+msg_len
+        buf_len = 19+msg_len
 
         result_buf = bytearray(buf_len)
 
@@ -72,10 +72,13 @@ class ProtocolHandler(object):
         result_buf[12] = inner_port/0x100
 
         result_buf[13] = msg_len%0x100
-        result_buf[14] = msg_len/0x100
+        result_buf[14] = msg_len/0x100%0x100
+        result_buf[15] = msg_len/0x10000%0x100
+        result_buf[16] = msg_len/0x1000000
 
-        for i in range(msg_len):
-            result_buf[15 + i] = msg[i]
+        #for i in range(msg_len):
+        #    result_buf[17 + i] = msg[i]
+        result_buf[17:17 + msg_len] = msg
 
         result_buf[buf_len - 1] = 0x16
 
@@ -94,9 +97,9 @@ class ProtocolHandler(object):
 
         result_data.inner_port = array_buf[11] + array_buf[12]*0x100
 
-        data_len = array_buf[13] + array_buf[14]*0x100
+        data_len = array_buf[13] + array_buf[14]*0x100 + array_buf[15]*0x10000 + array_buf[16]*0x1000000
         if data_len > 0:
-            result_data.data = array_buf[15:15+data_len]
+            result_data.data = array_buf[17:17+data_len]
 
         return result_data
 
@@ -125,15 +128,15 @@ class ProtocolHandler(object):
     def get_one_complete_package(self,ring_buffer):
 
 
-        if ring_buffer.buf_len() < 17:
+        if ring_buffer.buf_len() < 19:
             raise ParseTimeout()
 
         if ring_buffer.look(0) != 0xAB or ring_buffer.look(1) != 0xBA:
             raise ParseError()
 
-        data_len = ring_buffer.look(13) + ring_buffer.look(14)*0x100
+        data_len = ring_buffer.look(13) + ring_buffer.look(14)*0x100 + ring_buffer.look(15)*0x10000 + ring_buffer.look(16)*0x1000000
 
-        package_len = 17 + data_len
+        package_len = 19 + data_len
 
         if ring_buffer.buf_len() < package_len:
             raise ParseTimeout()
