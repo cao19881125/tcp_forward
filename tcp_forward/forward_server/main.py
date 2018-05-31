@@ -16,6 +16,7 @@ import argparse
 import ConfigParser
 import logging
 from logging.handlers import RotatingFileHandler
+from cfg_manager import CfgManager
 
 port_mapper_changed = False
 
@@ -129,8 +130,10 @@ def log_config(level):
 
 def main(cfg_file):
 
-    cfg = ConfigParser.ConfigParser()
-    cfg.readfp(open(cfg_file, 'rb'))
+    #cfg = ConfigParser.ConfigParser()
+    #cfg.readfp(open(cfg_file, 'rb'))
+    CfgManager.get_instance().register_file(cfg_file)
+    cfg = CfgManager.get_instance().get_cfg()
 
     log_config(cfg.get('DEFAULT','LOG_LEVEL'))
 

@@ -5,10 +5,13 @@ from common import forward_data
 from common import connector
 from common import tools
 import logging
+from cfg_manager import CfgManager
 logger = logging.getLogger('my_logger')
 
 class OutDataHandler(DataHandler):
-
+    def __init__(self):
+        self.__bandwidth = CfgManager.get_instance().get_cfg().get('DEFAULT','BANDWIDTH')
+        self.__one_package_size = int(self.__bandwidth) * 1024 * 1024 / 8 / 2
 
     def create_connection(self,forward_id,inner_ip,inner_port,inner_connector):
         _protocol_handler = ProtocolHandler()
@@ -22,13 +25,14 @@ class OutDataHandler(DataHandler):
 
     def trans_data(self,forward_id,inner_ip,inner_port,data,inner_connector):
 
+        cfg = CfgManager.get_instance().get_cfg()
         ori = 0
         total_len = len(data)
         while ori < total_len:
-            if total_len - ori <= 2**31:
+            if total_len - ori <= self.__one_package_size:
                 send_data = data[ori:total_len]
             else:
-                send_data = data[ori:ori + 2**31]
+                send_data = data[ori:ori + self.__one_package_size]
 
             _protocol_handler = ProtocolHandler()
             forw_data = forward_data.ForwardData(forward_data.DATA_TYPE.TRANS_DATA, forward_id,
@@ -41,7 +45,7 @@ class OutDataHandler(DataHandler):
                     raise Exception("Send data failed")
                 #print 'inner_connector send package'
                 #tools.print_hex_buf(send_package)
-            ori += 2**31
+            ori += self.__one_package_size
 
 
     def close_connection(self,forward_id,inner_ip,inner_port,inner_connector):
