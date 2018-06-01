@@ -17,7 +17,7 @@ import ConfigParser
 import logging
 from logging.handlers import RotatingFileHandler
 from cfg_manager import CfgManager
-
+import traceback
 port_mapper_changed = False
 
 logger = logging.getLogger('my_logger')
@@ -96,6 +96,8 @@ def run(cfg):
                                 (_outer_worker.get_worker_id(),_outer_socket.fileno(),_inner_ip,_inner_port))
                 except Exception, e:
                     _outer_socket.close()
+                    logger.error("Outer socket accept failed,fileno:%d to inner port:%s:%d"%(fileno,_inner_ip,_inner_port))
+                    logger.debug(traceback.format_exc())
                     continue
             else:
                 _inner_worker = _worker_manager.get_inner_worker_by_fileno(fileno)

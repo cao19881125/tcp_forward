@@ -6,6 +6,7 @@ from common import connector, epoll_recever, ring_buffer
 from data_handler import OuterDataHandler
 import logging
 from logging.handlers import RotatingFileHandler
+import traceback
 logger = logging.getLogger('my_logger')
 
 class OuterWorker(object):
@@ -39,6 +40,7 @@ class OuterWorker(object):
         except Exception,e:
             logger.error("OuterrWorker current state:WORKING send heartbeat error,change state to DISCONNECTED" )
             self.__state = self.State.DISCONNECTED
+            logger.debug(traceback.format_exc())
 
     def handle_event(self,recever,event):
 

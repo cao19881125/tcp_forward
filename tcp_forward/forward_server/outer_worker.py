@@ -5,6 +5,7 @@ from common import tools
 import data_handler
 import logging
 import time
+import traceback
 logger = logging.getLogger('my_logger')
 
 class OuterWorker(object):
@@ -116,6 +117,7 @@ class OuterWorker(object):
                 except Exception,e:
                     error_happen = True
                     logger.error("OuterWorker %d current state:WORKING send data error" % (self.__worker_id))
+                    logger.debug(traceback.format_exc())
             else:
                 if self.__connector.con_state != connector.CON_STATE.CON_CONNECTED:
                     error_happen = True

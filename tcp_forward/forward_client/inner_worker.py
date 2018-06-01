@@ -5,6 +5,7 @@ from enum import Enum
 import data_handler
 from common import connector
 import logging
+import traceback
 logger = logging.getLogger('my_logger')
 
 class InnerWorker(object):
@@ -103,6 +104,7 @@ class InnerWorker(object):
                 except Exception,e:
                     error_happen = True
                     logger.error("InnerWorker %d current state:WORKING send data error" % (self.__id))
+                    logger.debug(traceback.format_exc())
 
             else:
                 if self.__connector.con_state != connector.CON_STATE.CON_CONNECTED:
