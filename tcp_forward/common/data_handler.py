@@ -3,6 +3,7 @@ import connector
 import logging
 logger = logging.getLogger('my_logger')
 
+
 class DataHandler(object):
     def __init__(self):
         pass
@@ -19,9 +20,15 @@ class DataHandler(object):
         try:
             protocol_parse.del_wrong_header(ring_buffer)
             package = protocol_parse.get_one_complete_package(ring_buffer)
+            ring_buffer.set_clear()
         except protocol_handler.ParseTimeout,e:
             #print 'parse timeout,current buffer:'
             logger.debug(e.message)
+            ring_buffer.set_time_out()
+            if ring_buffer.over_max_time():
+                protocol_parse.pop_header(ring_buffer)
+                protocol_parse.del_wrong_header(ring_buffer)
+                logger.error('ring buffer over max timeout time,del wrong header')
             return None
         except protocol_handler.ParseError,e:
             print 'parse error'

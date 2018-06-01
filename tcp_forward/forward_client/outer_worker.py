@@ -20,7 +20,7 @@ class OuterWorker(object):
         self.__outer_ip = outer_ip
         self.__outer_port = outer_port
         self.__connector = None
-        self.__ring_buffer = ring_buffer.RingBuffer(10240 * 10240)
+        self.__ring_buffer = ring_buffer.TimeoutRingbuffer(10240 * 10240, 5)
         self.__data_handler = OuterDataHandler()
         self.__last_heart_beat_time = int(time.time())
 

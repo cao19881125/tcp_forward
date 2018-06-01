@@ -19,7 +19,7 @@ class InnerWorker(object):
         self.__state = self.State.NONE
         self.__connector = connector.Connector(inner_socket)
         self.__data_handler = data_handler.InnerDataHandler()
-        self.__ring_buffer = ring_buffer.RingBuffer(10240 * 10240)
+        self.__ring_buffer = ring_buffer.TimeoutRingbuffer(10240 * 10240,5)
         if self.__connector.con_state == connector.CON_STATE.CON_CONNECTED:
             self.__state = self.State.WORKING
 

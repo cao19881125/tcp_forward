@@ -1,4 +1,5 @@
 from pprint import pprint
+import time
 
 class RingBuffer(object):
     def __init__(self,buffer_size):
@@ -82,6 +83,26 @@ class RingBuffer(object):
                     result_array[0:front_len] = self.__buffer[self.__read_ptr:]
                     result_array[front_len:] = self.__buffer[0:behind_len]
                     return result_array
+
+class TimeoutRingbuffer(RingBuffer):
+    def __init__(self,buffer_size,max_time):
+        super(TimeoutRingbuffer,self).__init__(buffer_size)
+        self.__time_out_time = 0
+        self.__max_time = max_time
+
+    def set_time_out(self):
+        if self.__time_out_time == 0:
+            self.__time_out_time = time.time()
+
+    def set_clear(self):
+        self.__time_out_time = 0
+
+    def over_max_time(self):
+        if self.__time_out_time == 0:
+            return False
+        return (time.time() - self.__time_out_time) > self.__max_time
+
+
 
 if __name__=='__main__':
     test_buffer = RingBuffer(10)
