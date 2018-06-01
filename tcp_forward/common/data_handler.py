@@ -1,6 +1,7 @@
 import forward_data, protocol_handler
 import connector
-
+import logging
+logger = logging.getLogger('my_logger')
 
 class DataHandler(object):
     def __init__(self):
@@ -19,7 +20,8 @@ class DataHandler(object):
             protocol_parse.del_wrong_header(ring_buffer)
             package = protocol_parse.get_one_complete_package(ring_buffer)
         except protocol_handler.ParseTimeout,e:
-            print 'parse timeout,current buffer:'
+            #print 'parse timeout,current buffer:'
+            logger.debug(e.message)
             return None
         except protocol_handler.ParseError,e:
             print 'parse error'

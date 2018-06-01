@@ -32,6 +32,14 @@ class InnerWorker(object):
     def get_worker_id(self):
         return self.__worker_id
 
+    def close(self):
+        if self.__state == self.State.DONE:
+            return
+        else:
+            self.__connector.close()
+            self.__state = self.State.CLOSED
+            logger.debug("InnerWorker %d current state:%s change state to CLOSED " % (self.__worker_id,str(self.__state)))
+
     def get_fileno(self):
         if self.__connector == None:
             return None

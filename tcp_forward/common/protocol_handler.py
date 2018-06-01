@@ -8,7 +8,13 @@ from common import forward_data
 '''
 
 class ParseTimeout(Exception):
-    pass
+    def __init__(self, package_len, buf_len):
+        self.package_len = package_len
+        self.buf_len = buf_len
+
+    @property
+    def message(self):
+        return "Parse time out,package len:%d buf_len:%d"%(self.package_len,self.buf_len)
 
 class ParseError(Exception):
     pass
@@ -129,7 +135,7 @@ class ProtocolHandler(object):
 
 
         if ring_buffer.buf_len() < 19:
-            raise ParseTimeout()
+            raise ParseTimeout(19,ring_buffer.buf_len())
 
         if ring_buffer.look(0) != 0xAB or ring_buffer.look(1) != 0xBA:
             raise ParseError()
@@ -139,7 +145,7 @@ class ProtocolHandler(object):
         package_len = 19 + data_len
 
         if ring_buffer.buf_len() < package_len:
-            raise ParseTimeout()
+            raise ParseTimeout(package_len, ring_buffer.buf_len())
 
         if ring_buffer.look(package_len - 1) != 0x16:
             raise ParseError()

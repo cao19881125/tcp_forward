@@ -4,6 +4,7 @@ from common import connector
 from common import tools
 import data_handler
 import logging
+import time
 logger = logging.getLogger('my_logger')
 
 class OuterWorker(object):
@@ -21,6 +22,7 @@ class OuterWorker(object):
         self.__inner_port = inner_port
         self.__connector = connector.Connector(outer_socket)
         self.__data_handler = data_handler.OutDataHandler()
+        self.__connecting_begin_time = 0
 
     def has_done(self):
         return self.__state == self.State.DONE
@@ -64,12 +66,18 @@ class OuterWorker(object):
             if inner_connection and inner_connection.con_state == connector.CON_STATE.CON_CONNECTED:
                 self.__data_handler.create_connection(self.__worker_id,self.__inner_ip,self.__inner_port,inner_connection)
                 self.__state = self.State.CONNECTING_TO_INNER
+                self.__connecting_begin_time = time.time()
                 logger.debug("OuterWorker %d current state:NONE create inner connecttion to %s:%d ,change state to CONNECTING_TO_INNER"%
                              (self.__worker_id,self.__inner_ip,self.__inner_port))
             else:
                 self.__connector.close()
                 self.__state = self.State.DONE
                 logger.debug("OuterWorker %d current state:NONE change state to DONE due inner_connection state error"%(self.__worker_id))
+        elif self.__state == self.State.CONNECTING_TO_INNER:
+            if (time.time() - self.__connecting_begin_time) >= 5:
+                #connecting can not over 5 seconds
+                inner_connection.close()
+                self.__state = self.State.CLOSED
         elif self.__state == self.State.WORKING:
             if self.__connector.con_state != connector.CON_STATE.CON_CONNECTED:
                 self.__state = self.State.CLOSED
