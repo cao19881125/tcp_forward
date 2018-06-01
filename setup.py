@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = "tcp-forward",
-    version = "1.0.1",
+    version = "1.0.2",
     keywords = ("tcp-forward"),
     description = "forward data from an established tcp connection",
     license = "MIT",
