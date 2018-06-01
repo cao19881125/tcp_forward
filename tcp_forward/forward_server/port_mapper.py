@@ -3,6 +3,11 @@ import os
 import pyinotify
 import ConfigParser
 
+# PortMapper save the relationship between server's out port and client's inner network's ip:port
+# PortMapper parse the mapper file to get these relationships
+# PortMapper monitor the mapper file,if the mapper file changed when server process running,PortMapper can received
+# a notify event,PortMapper refresh the new relationship immediately
+
 class PortMapper(pyinotify.ProcessEvent):
     class Coninfo(object):
         def __init__(self,ip,port):

@@ -4,8 +4,6 @@ from pprint import pprint
 
 from common import forward_data
 
-'''
-'''
 
 class ParseTimeout(Exception):
     def __init__(self, package_len, buf_len):
@@ -18,6 +16,8 @@ class ParseTimeout(Exception):
 
 class ParseError(Exception):
     pass
+
+
 
 class ProtocolHandler(object):
 

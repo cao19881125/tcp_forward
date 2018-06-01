@@ -9,6 +9,16 @@ class DataHandler(object):
         pass
 
     def parse_data(self,ring_buffer):
+        """
+        Use protocol handler to get one complete package
+        When we get a timeout exception ,means there is still some data not received due to the the characteristics of tcp flow
+        But when we lost data due to tcp stack or some other reasons,perhaps we will enter a forever loop
+        The loop's creation like this:
+            1.Receive a half package ,the package tell me there are 1M data in the package
+            2.Receive data in the following loop until 1M is full
+            3.It's virtually impossible to recevie all data because the following data have losted
+            4.So i use timeout ring_buffer to record parse_timeout seconds,delete the package which receive time over 5 seconds
+        """
         #get one complete package
 
         if ring_buffer.buf_len() <= 0:

@@ -9,6 +9,11 @@ from cfg_manager import CfgManager
 logger = logging.getLogger('my_logger')
 
 class OutDataHandler(DataHandler):
+    """
+    In this section,we must calculate an suitable package size according to the network bandwidth
+    Suppose I want the network card to send a packet of data within one second,then the package size must smaller than the bandwidth
+    So i calculated the approximate value by dividing the bandwidth by two
+    """
     def __init__(self):
         self.__bandwidth = CfgManager.get_instance().get_cfg().get('DEFAULT','BANDWIDTH')
         self.__one_package_size = int(self.__bandwidth) * 1024 * 1024 / 8 / 2
@@ -24,10 +29,10 @@ class OutDataHandler(DataHandler):
                 logger.error("CreateConnectionData send failed,forward_id:%d inner_ip:%s inner_port:%d" % (forward_id, inner_ip, inner_port))
 
     def trans_data(self,forward_id,inner_ip,inner_port,data,inner_connector):
-
         cfg = CfgManager.get_instance().get_cfg()
         ori = 0
         total_len = len(data)
+
         while ori < total_len:
             if total_len - ori <= self.__one_package_size:
                 send_data = data[ori:total_len]
