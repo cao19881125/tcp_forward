@@ -97,7 +97,7 @@ class OuterWorker(object):
             logger.debug("OuterWorker current state:DISCONNECTED close all inner_worker,change state to NONE")
 
 
-        self.__data_handler.handle_data(self.__ring_buffer,inner_worker_manager)
+        self.__data_handler.handle_data(self.__ring_buffer,inner_worker_manager,self.__connector)
 
     def __handle_working_event(self,event):
         #print '__handle_working_event'

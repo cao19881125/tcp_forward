@@ -23,13 +23,13 @@ class WorkerManager(object):
         else:
             return None
 
-    def add_outer_worker(self,outer_socket,inner_ip,inner_port):
+    def add_outer_worker(self,outer_socket,inner_ip,inner_port,inner_tag):
         _worker_id = self.generate_worker_id()
-        _paired_inner_worker = self.get_inner_worker_by_random()
+        _paired_inner_worker = self.get_inner_worker_by_tag(inner_tag)
 
 
         if not _paired_inner_worker :
-            raise Exception('')
+            raise Exception('get inner worker by tag failed,tag is:' + str(inner_tag))
         _outer_worker = outer_worker.OuterWorker(_worker_id, inner_ip, inner_port, outer_socket)
 
         self.add_map(_worker_id, _paired_inner_worker.get_worker_id())
@@ -77,6 +77,14 @@ class WorkerManager(object):
 
         _random_num = int(random.random()*100)%len(self.__inner_workers)
         return [value for value in self.__inner_workers.values()][_random_num]
+
+    def get_inner_worker_by_tag(self,tag):
+        if len(self.__inner_workers) <= 0:
+            return None
+        for item in self.__inner_workers.values():
+            if item.get_tag() == tag:
+                return item
+        return None
 
     def remove_outer_worker(self,worker_id):
         self.__outer_workers.pop(worker_id)

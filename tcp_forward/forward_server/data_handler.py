@@ -1,11 +1,12 @@
 
+import logging
+
+from common import connector
+from common import forward_data
+from common.cfg_manager import CfgManager
 from common.data_handler import DataHandler
 from common.protocol_handler import ProtocolHandler
-from common import forward_data
-from common import connector
-from common import tools
-import logging
-from cfg_manager import CfgManager
+
 logger = logging.getLogger('my_logger')
 
 class OutDataHandler(DataHandler):
@@ -64,6 +65,27 @@ class OutDataHandler(DataHandler):
                 logger.error("CloseConnectionData send failed,forward_id:%d inner_ip:%s inner_port:%d" % (forward_id, inner_ip, inner_port))
 
 class InnerDataHandler(DataHandler):
+
+    def send_pre_working(self,inner_connector):
+        _protocol_handler = ProtocolHandler()
+        pre_work_data = forward_data.ForwardData(forward_data.DATA_TYPE.PRE_WORKING,0,'0.0.0.0',0,'')
+        send_package = _protocol_handler.build_data(pre_work_data)
+        if inner_connector and inner_connector.con_state == connector.CON_STATE.CON_CONNECTED:
+            send_bytes = inner_connector.send(send_package)
+            if send_bytes <= 0:
+                logger.error("Preworking data send error")
+                raise Exception("Send data failed")
+
+    def handle_pre_working_response(self, ring_buffer):
+        while True:
+            parsed_data = super(InnerDataHandler, self).parse_data(ring_buffer)
+            if parsed_data == None:
+                return None
+
+            if parsed_data.data_type == forward_data.DATA_TYPE.PRE_WORKING:
+                tag = str(parsed_data.data)
+                return tag
+
     def handle_data(self, ring_buffer,worker_manager):
         while True:
             parsed_data = super(InnerDataHandler, self).parse_data(ring_buffer)

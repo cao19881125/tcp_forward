@@ -10,9 +10,10 @@ import ConfigParser
 
 class PortMapper(pyinotify.ProcessEvent):
     class Coninfo(object):
-        def __init__(self,ip,port):
+        def __init__(self,ip,port,tag='default'):
             self.ip = ip
             self.port = port
+            self.tag = tag
 
     def __init__(self,map_file_path,call_back):
         # map out port to inner port,like:{1234:Coninfo('192.168.1.5',1234)}
@@ -46,6 +47,13 @@ class PortMapper(pyinotify.ProcessEvent):
                 inner_ip = inner_info[0].lstrip().rstrip()
                 inner_port = int(inner_info[1].lstrip().rstrip())
                 temp_info[outer_port] = self.Coninfo(inner_ip,inner_port)
+
+            tags = cf.items('TAG')
+            for item in tags:
+                outer_port = int(item[0].lstrip().rstrip())
+                tag = item[1].lstrip().rstrip()
+                if temp_info.has_key(outer_port):
+                    temp_info[outer_port].tag = tag
         except Exception,e:
             print e
             raise e
@@ -83,17 +91,17 @@ class PortMapper(pyinotify.ProcessEvent):
 
     def get_inner_info_by_fileno(self,fileno):
         if not self.__fileno_to_port.has_key(fileno):
-            return None,None
+            return None,None,None
 
         out_port = self.__fileno_to_port[fileno]
 
         if not self.__port_to_info.has_key(out_port):
-            return None,None
+            return None,None,None
 
-        return self.__port_to_info[out_port].ip,self.__port_to_info[out_port].port
+        return self.__port_to_info[out_port].ip,self.__port_to_info[out_port].port,self.__port_to_info[out_port].tag
 
     def get_inner_info_by_out_port(self,out_port):
         if self.__port_to_info.has_key(out_port):
-            return self.__port_to_info[out_port].ip,self.__port_to_info[out_port].port
+            return self.__port_to_info[out_port].ip,self.__port_to_info[out_port].port,self.__port_to_info[out_port].tag
         else:
-            return None,None
+            return None,None,None

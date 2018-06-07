@@ -1,5 +1,6 @@
-import sys
 import os
+import sys
+
 PROJECT_ROOT = os.path.abspath(os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..'))
 if PROJECT_ROOT not in sys.path:
@@ -7,16 +8,13 @@ if PROJECT_ROOT not in sys.path:
 
 from common import epoll_recever
 from common import acceptor
-import socket,select
+import select
 import port_mapper
 import worker_manager
-import inner_worker
-import outer_worker
 import argparse
-import ConfigParser
 import logging
 from logging.handlers import RotatingFileHandler
-from cfg_manager import CfgManager
+from common.cfg_manager import CfgManager
 import traceback
 port_mapper_changed = False
 
@@ -85,18 +83,21 @@ def run(cfg):
                 # recv outer connection
                 _outer_socket, address = out_acceptors[fileno].accept()
                 _outer_socket.setblocking(0)
-                _inner_ip, _inner_port = _port_mapper.get_inner_info_by_fileno(fileno)
-                if not _inner_ip or not _inner_port:
+                _inner_ip, _inner_port, _inner_tag = _port_mapper.get_inner_info_by_fileno(fileno)
+                if not _inner_ip or not _inner_port or not _inner_tag:
                     _outer_socket.close()
+                    logger.error("Out_acceptor:%d has event,get_inner_info failed"%(fileno) +
+                                 ' inner_ip:' + str(_inner_ip) + ' _inner_port:' + str(_inner_port) + ' _inner_tag:' + str(_inner_tag))
                     continue
                 try:
-                    _outer_worker = _worker_manager.add_outer_worker(_outer_socket, _inner_ip, _inner_port)
+                    _outer_worker = _worker_manager.add_outer_worker(_outer_socket, _inner_ip, _inner_port, _inner_tag)
                     recver.add_receiver(_outer_socket.fileno(), select.EPOLLIN)
                     logger.info("Outer socket accept, worker_id:%d fileno:%d to inner port:%s:%d"%
                                 (_outer_worker.get_worker_id(),_outer_socket.fileno(),_inner_ip,_inner_port))
                 except Exception, e:
                     _outer_socket.close()
-                    logger.error("Outer socket accept failed,fileno:%d to inner port:%s:%d"%(fileno,_inner_ip,_inner_port))
+                    #logger.error("Outer socket accept failed,fileno:%d to inner port:%s:%d"%(fileno,_inner_ip,_inner_port))
+                    logger.error(e.message)
                     logger.debug(traceback.format_exc())
                     continue
             else:
