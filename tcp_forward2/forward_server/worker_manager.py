@@ -1,14 +1,17 @@
 import random
+import select
 import inner_worker
 import outer_worker
 from common import forward_event
+from common import connector
 
 class WorkerManager(object):
-    def __init__(self):
+    def __init__(self,epoll_recver):
         self.__mapper = {}
         self.__outer_workers = {}
         self.__inner_workers = {}
         self.__worker_id_seq = 0
+        self.__epoll_recver = epoll_recver
 
     def generate_worker_id(self):
         self.__worker_id_seq += 1
@@ -25,7 +28,8 @@ class WorkerManager(object):
         if not _paired_inner_worker :
             raise Exception('get inner worker by tag failed,tag is:' + str(inner_tag))
         _outer_worker = outer_worker.OuterWorker(_worker_id, inner_ip,inner_port, outer_socket,
-                                                 self.__outer_to_inner_channel(_worker_id,_paired_inner_worker.get_worker_id()))
+                                                 self.__outer_to_inner_channel(_worker_id,_paired_inner_worker.get_worker_id()),
+                                                 self.__connector_changed)
 
         self.add_map(_worker_id, _paired_inner_worker.get_worker_id())
         self.__outer_workers[_worker_id] = _outer_worker
@@ -34,7 +38,8 @@ class WorkerManager(object):
     def add_inner_worker(self,inner_socket):
 
         _worker_id = self.generate_worker_id()
-        _inner_worker = inner_worker.InnerWorker(_worker_id, inner_socket, self.__inner_to_outer_channel(_worker_id))
+        _inner_worker = inner_worker.InnerWorker(_worker_id, inner_socket, self.__inner_to_outer_channel(_worker_id),
+                                                 self.__connector_changed)
 
         self.__inner_workers[_worker_id] = _inner_worker
         return _inner_worker
@@ -86,6 +91,13 @@ class WorkerManager(object):
                 continue
             worker.handler_event(scheduler_event)
 
+    def __connector_changed(self,con,event_handler):
+        if con.con_state == connector.CON_STATE.CON_CONNECTED:
+            self.__epoll_recver.add_receiver(con.get_fileno(), select.EPOLLIN,event_handler)
+        elif con.con_state == connector.CON_STATE.CON_CONNECTING:
+            self.__epoll_recver.add_receiver(con.get_fileno(), select.EPOLLOUT,event_handler)
+        elif con.con_state == connector.CON_STATE.CON_CLOSED:
+            self.__epoll_recver.del_receiver(con.get_fileno())
 
     def __inner_to_outer_channel(self,inner_worker_id):
         def channel(event):

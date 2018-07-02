@@ -10,7 +10,7 @@ class DATA_TYPE(object):
 
 
 class ForwardData(object):
-    def __init__(self,data_type=0,forward_id=0,inner_ip='',inner_port=0,data=None):
+    def __init__(self,data_type=0,forward_id=0,inner_ip='',inner_port=0,data=''):
         self.data_type = data_type
         self.id = forward_id
         self.inner_ip = inner_ip

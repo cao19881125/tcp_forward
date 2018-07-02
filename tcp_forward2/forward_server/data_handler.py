@@ -72,16 +72,6 @@ class InnerDataHandler(DataHandler):
                 logger.error("CreateConnectionData send failed,forward_id:%d inner_ip:%s inner_port:%d" % (
                 forward_id, inner_ip, inner_port))
 
-    def create_connection(self,forward_id,inner_ip,inner_port,inner_connector):
-        _protocol_handler = ProtocolHandler()
-        forw_data = forward_data.ForwardData(forward_data.DATA_TYPE.NEW_CONNECTION, forward_id,
-                                             inner_ip, inner_port, '')
-        send_package = _protocol_handler.build_data(forw_data)
-        if inner_connector and inner_connector.con_state == connector.CON_STATE.CON_CONNECTED:
-            send_bytes = inner_connector.send(send_package)
-            if send_bytes <= 0:
-                logger.error("CreateConnectionData send failed,forward_id:%d inner_ip:%s inner_port:%d" % (
-                forward_id, inner_ip, inner_port))
 
     def close_connection(self,forward_id,inner_ip,inner_port,inner_connector):
         _protocol_handler = ProtocolHandler()

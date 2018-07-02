@@ -20,20 +20,30 @@ logger = logging.getLogger('my_logger')
 
 port_mapper_changed = False
 
-def port_mapper_change_callback():
-    global port_mapper_changed
-    port_mapper_changed = True
 
 def run():
     recver = epoll_recever.Epoll_receiver()
 
     inner_port = int(cfg.CONF.INNER_PORT)
     inner_acceptor = acceptor.Acceptor('0.0.0.0', inner_port)
+    logger.info('Inner port listen:' + str(inner_port))
+
+    out_acceptors = {}
 
     # there are many outer acceptor
-    _port_mapper = port_mapper.PortMapper(cfg.CONF.OUTER_PORTS_FILE, port_mapper_change_callback)
 
-    _worker_manager = worker_manager.WorkerManager()
+
+
+
+
+
+    def build_outer_acceptors():
+        for port in _port_mapper.get_outer_ports():
+            _inner_ip, _inner_port, _inner_tag = _port_mapper.get_inner_info_by_out_port(port)
+            _outer_acceptor = acceptor.PortMapperAcceptor('0.0.0.0',port,_inner_ip, _inner_port, _inner_tag)
+            recver.add_receiver(_outer_acceptor.get_fileno(),select.EPOLLIN,outer_acceptor_handler_event(_outer_acceptor))
+            out_acceptors[_outer_acceptor.get_fileno()] = _outer_acceptor
+            logger.info("Out port listen:" + str(port) + '->' + str((_inner_ip, _inner_port, _inner_tag)))
 
     def inner_acceptor_handler_event(event):
         _inner_socket, address = inner_acceptor.accept()
@@ -41,7 +51,7 @@ def run():
         _inner_worker = _worker_manager.add_inner_worker(_inner_socket)
 
         recver.add_receiver(_inner_socket.fileno(), select.EPOLLIN,_inner_worker.handler_event)
-        print 'inner worker accept fileno:' + str(_inner_socket.fileno())
+        logger.info('inner worker accept fileno:' + str(_inner_socket.fileno()))
 
     def outer_acceptor_handler_event(acceptor):
         def handler(event):
@@ -58,15 +68,25 @@ def run():
                 logger.debug(traceback.format_exc())
         return handler
 
+    def port_mapper_change_callback():
+        for acc_fileno, acc in out_acceptors.items():
+            recver.del_receiver(acc_fileno)
+            acc.close()
+        out_acceptors.clear()
+        logger.info('Port mapper changed,clear current outport listeners,recreating')
+        build_outer_acceptors()
+
+    _worker_manager = worker_manager.WorkerManager(recver)
+
+    _port_mapper = port_mapper.PortMapper(cfg.CONF.OUTER_PORTS_FILE, port_mapper_change_callback)
+
     recver.add_receiver(inner_acceptor.get_fileno(), select.EPOLLIN, inner_acceptor_handler_event)
 
-    for port in _port_mapper.get_outer_ports():
-        _inner_ip, _inner_port, _inner_tag = _port_mapper.get_inner_info_by_out_port(port)
-        _outer_acceptor = acceptor.PortMapperAcceptor('0.0.0.0',port,_inner_ip, _inner_port, _inner_tag)
-        recver.add_receiver(_outer_acceptor.get_fileno(),select.EPOLLIN,outer_acceptor_handler_event(_outer_acceptor))
-        logger.info("Out port listen:" + str(port) + '->' + str((_inner_ip, _inner_port, _inner_tag)))
+    build_outer_acceptors()
+
 
     while True:
+        _port_mapper.watch_event(0.1)
         _worker_manager.all_worker_do()
         recver.run()
 

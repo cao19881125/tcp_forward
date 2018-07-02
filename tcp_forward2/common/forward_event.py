@@ -28,6 +28,7 @@ class CloseConEvent(ForwardEvent):
         super(CloseConEvent,self).__init__(CLOSECONEVENT)
         self.forward_id = forward_id
 
+
 def event_filter(func):
     def filter(*args,**kwargs):
         if type(args[1]) == int:

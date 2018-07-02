@@ -16,7 +16,7 @@ class InnerWorker(object):
         WORKING = 2
         CLOSED = 3
         DONE = 4
-    def __init__(self,worker_id,inner_socket,north_interface_channel):
+    def __init__(self,worker_id,inner_socket,north_interface_channel,connector_change_callback):
         self.__worker_id = worker_id
         self.__state = self.State.NONE
         self.__socket = inner_socket
@@ -24,6 +24,7 @@ class InnerWorker(object):
         self.__north_interface_channel = north_interface_channel
         self.__data_handler = data_handler.InnerDataHandler()
         self.__ring_buffer = ring_buffer.TimeoutRingbuffer(10240 * 10240, 5)
+        self.__connector_change_callback = connector_change_callback
 
     def has_done(self):
         return self.__state == self.State.DONE
@@ -87,6 +88,7 @@ class InnerWorker(object):
             self.__data_handler.send_pre_working(self.__connector)
             self.__state = self.State.PRE_WORKING
             self.__pre_working_start = time.time()
+            logger.debug("InnerWorker %d current state:NONE change state to PRE_WORKING" % (self.__worker_id))
         elif self.__state == self.State.PRE_WORKING:
             if (time.time() - self.__pre_working_start) > 5:
                 self.__state = self.State.CLOSED
@@ -97,6 +99,7 @@ class InnerWorker(object):
                 close_event = forward_event.CloseConEvent(self.__worker_id)
                 self.__north_interface_channel(close_event)
                 self.__connector.close()
+                self.__connector_change_callback(self.__connector, self.handler_event)
             except Exception,e:
                 logger.error(e.message)
             self.__state = self.State.DONE

@@ -20,7 +20,7 @@ class Connector(object):
     def close(self):
         if self.con_state != CON_STATE.CON_CLOSED:
             self._socket.close()
-            self.con_state == CON_STATE.CON_CLOSED
+            self.con_state = CON_STATE.CON_CLOSED
 
     def recv(self):
         if self.con_state != CON_STATE.CON_CONNECTED:

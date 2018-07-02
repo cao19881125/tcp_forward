@@ -18,7 +18,7 @@ class OuterWorker(object):
         CLOSED = 3
         DONE = 4
 
-    def __init__(self,worker_id,inner_ip,inner_port,outer_socket,sourth_interface_channel):
+    def __init__(self,worker_id,inner_ip,inner_port,outer_socket,sourth_interface_channel,connector_change_callback):
         self.__worker_id = worker_id
         self.__inner_ip = inner_ip
         self.__inner_port = inner_port
@@ -26,6 +26,8 @@ class OuterWorker(object):
         self.__sourth_interface_channel = sourth_interface_channel
         self.__connector = connector.Connector(outer_socket)
         self.__data_handler = data_handler.OutDataHandler()
+        self.__connector_change_callback = connector_change_callback
+        self.__connecting_begin_time = 0
 
     def has_done(self):
         return self.__state == self.State.DONE
@@ -60,6 +62,7 @@ class OuterWorker(object):
 
         if error_happen:
             self.__connector.close()
+
             self.__state = self.State.CLOSED
             logger.debug("OuterWorker %d current state:WORKING change state to CLOSED" % (self.__worker_id))
 
@@ -67,6 +70,8 @@ class OuterWorker(object):
     def __north_interface_event(self, event):
         if self.__state == self.State.WORKING:
             self.__recv_data(event)
+        else:
+            time.sleep(0.01)
 
     def __sourth_interface_transdata_event(self,event):
         if not isinstance(event,forward_event.TransDataEvent):
@@ -90,22 +95,25 @@ class OuterWorker(object):
     def __sourth_interface_closecon_event(self,event):
         if self.__state in (self.State.DONE,self.State.CLOSED):
             return
-        if self.__state == self.State.CONNECTING_TO_INNER:
-            self.__state = self.State.DONE
 
-        else:
-            self.__connector.close()
-            self.__state = self.State.CLOSED
-            logger.debug(
-                "OuterWorker %d current state:%s change state to CLOSED " % (self.__worker_id, str(self.__state)))
+        self.__connector.close()
+        self.__state = self.State.CLOSED
+        logger.debug(
+            "OuterWorker %d current state:%s change state to CLOSED " % (self.__worker_id, str(self.__state)))
 
     def __scheduler_event(self, event):
         if self.__state == self.State.NONE:
             self.__data_handler.create_connection(self.__worker_id, self.__inner_ip, self.__inner_port,
                                                   self.__sourth_interface_channel)
             self.__state = self.State.CONNECTING_TO_INNER
+            self.__connecting_begin_time = time.time()
             logger.debug("OuterWorker %d current state:NONE create inner connecttion to %s:%d ,change state to CONNECTING_TO_INNER" %
                 (self.__worker_id, self.__inner_ip, self.__inner_port))
+        elif self.__state == self.State.CONNECTING_TO_INNER:
+            if (time.time() - self.__connecting_begin_time) >= 5:
+                #connecting can not over 5 seconds
+                self.__state = self.State.CLOSED
+                logger.error("OuterWorker %d  stay in CONNECTING_TO_INNER state over 5 seconds,change state to CLOSED"%(self.__worker_id))
         elif self.__state == self.State.WORKING:
             if self.__connector.con_state != connector.CON_STATE.CON_CONNECTED:
                 self.__state = self.State.CLOSED
@@ -115,6 +123,7 @@ class OuterWorker(object):
             close_event = forward_event.CloseConEvent(self.__worker_id)
             self.__sourth_interface_channel(close_event)
             self.__connector.close()
+            self.__connector_change_callback(self.__connector, self.handler_event)
             self.__state = self.State.DONE
             logger.debug("OuterWorker %d current state:CLOSED change state to DONE" % (self.__worker_id))
 

@@ -12,17 +12,28 @@ class Epoll_receiver(object):
         self.__epoll = select.epoll()
 
     def add_receiver(self,fd,events,event_handler):
-        self.__recv_fds[fd] = {
+        event_info = {
             EVENT_TYPE:events,
             EVENT_HANDLER:event_handler
         }
-        self.__epoll.register(fd, events)
+        if not self.__recv_fds.has_key(fd):
+            self.__recv_fds[fd] = event_info
+            self.__epoll.register(fd, events)
+        else:
+            self.change_event(fd,events,event_handler)
 
-    def change_event(self,fd,events):
+    def change_event(self,fd,events,event_handler):
+        event_info = {
+            EVENT_TYPE: events,
+            EVENT_HANDLER: event_handler
+        }
         if self.__recv_fds.has_key(fd):
-            self.__epoll.unregister(fd)
+            try:
+                self.__epoll.unregister(fd)
+            except Exception,e:
+                pass
             self.__epoll.register(fd,events)
-            self.__recv_fds[fd][EVENT_TYPE] = events
+            self.__recv_fds[fd] = event_info
 
     def del_receiver(self,fd):
         if self.__recv_fds.has_key(fd):
@@ -34,7 +45,6 @@ class Epoll_receiver(object):
         for fileno, event in events:
             if not self.__recv_fds.has_key(fileno):
                 continue
-
 
             self.__recv_fds[fileno][EVENT_HANDLER](event)
 
