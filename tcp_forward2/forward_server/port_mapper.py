@@ -14,6 +14,11 @@ class PortMapper(pyinotify.ProcessEvent):
             self.ip = ip
             self.port = port
             self.tag = tag
+        def __eq__(self, other):
+            return self.ip == other.ip and self.port == other.port and self.tag == other.tag
+
+        def __ne__(self, other):
+            return not self.__eq__(other)
 
     def __init__(self,map_file_path,call_back):
         # map out port to inner port,like:{1234:Coninfo('192.168.1.5',1234)}
@@ -28,6 +33,7 @@ class PortMapper(pyinotify.ProcessEvent):
         self.__wm = pyinotify.WatchManager()
         self.__notifier = pyinotify.Notifier(self.__wm,self)
         self.__wm.add_watch(os.path.dirname(map_file_path), pyinotify.IN_MODIFY)
+        self.__port_to_info = {}
         self.__refresh_port_info()
         #self.__wm.watch_transient_file(map_file_path, pyinotify.IN_MODIFY, ProcessTransientFile)
 
@@ -53,8 +59,17 @@ class PortMapper(pyinotify.ProcessEvent):
         except Exception,e:
             print e
             raise e
-        self.__port_to_info = temp_info
 
+        new_ports = [port for port in set(temp_info.keys()) - set(self.__port_to_info.keys())]
+        deld_ports = [port for port in set(self.__port_to_info.keys()) - set(temp_info.keys())]
+        changed_ports = []
+
+        for port in set(self.__port_to_info.keys()) - set(deld_ports):
+            if self.__port_to_info[port] != temp_info[port]:
+                changed_ports.append(port)
+
+        self.__port_to_info = temp_info
+        return new_ports,deld_ports,changed_ports
 
     def watch_event(self,time_out_ms):
         try:
@@ -66,14 +81,16 @@ class PortMapper(pyinotify.ProcessEvent):
                 return False
         except Exception,e:
             print 'process_events exception'
+            print e.message
 
 
     def process_IN_MODIFY(self, event):
         mod_file = os.path.join(event.path, event.name)
         if mod_file == self.__map_file_path:
             print  "Modify file: %s " % os.path.join(event.path, event.name)
-            self.__refresh_port_info()
-            self.__callback()
+            new_ports,deld_ports,changed_ports = self.__refresh_port_info()
+
+            self.__callback(new_ports, deld_ports, changed_ports)
 
     def get_outer_ports(self):
         return [port for port in self.__port_to_info]

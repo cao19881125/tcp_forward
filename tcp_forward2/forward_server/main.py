@@ -1,4 +1,5 @@
 import sys
+from webob import Request
 from oslo_config import cfg
 from oslo_service import wsgi
 from gevent import pywsgi
@@ -11,16 +12,23 @@ class ShowVersion():
         pass
     def __call__(self,environ,start_response):
         start_response("200 OK",[("Content-type", "text/plain")])
+        #print environ
+        req = Request(environ)
+        print req.method
+        print req.POST
+        print req.body
+        for key,value in req.params.items():
+            print "key=" + str(key) + "  value=" + str(value)
         return ["Paste Deploy LAB: Version = 1.0.0",]
     @classmethod
     def factory(cls,global_conf,**kwargs):
-        print "in ShowVersion.factory", global_conf, kwargs
         return ShowVersion()
 
 
 
 def main():
-    t = threading.Thread(target=forward_server.main())
+    t = threading.Thread(target=forward_server.main)
+    t.setDaemon(True)
     t.start()
 
     loader = wsgi.Loader(cfg.CONF)
