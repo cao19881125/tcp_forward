@@ -10,6 +10,7 @@ class WorkerManager(object):
         self.__mapper = {}
         self.__outer_workers = {}
         self.__inner_workers = {}
+        self.__worker_id_to_port = {}
         self.__worker_id_seq = 0
         self.__epoll_recver = epoll_recver
 
@@ -20,25 +21,26 @@ class WorkerManager(object):
     def add_map(self,outer_worker_id,inner_worker_id):
         self.__mapper[outer_worker_id] = inner_worker_id
 
-    def add_outer_worker(self,outer_socket,inner_ip,inner_port,inner_tag):
+    def add_outer_worker(self,outer_socket,port,address,inner_ip,inner_port,inner_tag):
         _worker_id = self.generate_worker_id()
         _paired_inner_worker = self.get_inner_worker_by_tag(inner_tag)
 
 
         if not _paired_inner_worker :
             raise Exception('get inner worker by tag failed,tag is:' + str(inner_tag))
-        _outer_worker = outer_worker.OuterWorker(_worker_id, inner_ip,inner_port, outer_socket,
+        _outer_worker = outer_worker.OuterWorker(_worker_id, inner_ip,inner_port, outer_socket,address,
                                                  self.__outer_to_inner_channel(_worker_id,_paired_inner_worker.get_worker_id()),
                                                  self.__connector_changed)
 
         self.add_map(_worker_id, _paired_inner_worker.get_worker_id())
         self.__outer_workers[_worker_id] = _outer_worker
+        self.__worker_id_to_port[_worker_id] = port
         return _outer_worker
 
-    def add_inner_worker(self,inner_socket):
+    def add_inner_worker(self,inner_socket,address):
 
         _worker_id = self.generate_worker_id()
-        _inner_worker = inner_worker.InnerWorker(_worker_id, inner_socket, self.__inner_to_outer_channel(_worker_id),
+        _inner_worker = inner_worker.InnerWorker(_worker_id, inner_socket, address,self.__inner_to_outer_channel(_worker_id),
                                                  self.__connector_changed)
 
         self.__inner_workers[_worker_id] = _inner_worker
@@ -51,6 +53,13 @@ class WorkerManager(object):
             return self.__inner_workers[worker_id]
         else:
             return None
+
+    def get_workers_by_port(self,port):
+        workers = []
+        for worker_id,o_port in self.__worker_id_to_port.items():
+            if o_port == port:
+                workers.append(self.__outer_workers[worker_id])
+        return workers
 
     def get_inner_worker_by_random(self):
         if len(self.__inner_workers) <= 0:
@@ -90,6 +99,36 @@ class WorkerManager(object):
                 self.remove_outer_worker(id)
                 continue
             worker.handler_event(scheduler_event)
+
+    def get_inner_worker_info(self,worker_id = None):
+        info = {}
+        if worker_id:
+            if self.__inner_workers.has_key(worker_id):
+                info[worker_id] = self.__inner_workers[worker_id].get_worker_static_info()
+        else:
+            for id,worker in self.__inner_workers.items():
+                info[id] = worker.get_worker_static_info()
+        return info
+
+    def get_outer_worker_info(self,worker_id):
+        info = {}
+        if self.__outer_workers.has_key(worker_id):
+            info[worker_id] = self.__outer_workers[worker_id].get_worker_static_info()
+        return info
+
+    def close_outer_worker(self,worker_id):
+        if not self.__outer_workers.has_key(worker_id):
+            raise Exception('can not find this worker:' + str(worker_id))
+
+        close_event = forward_event.CloseConEvent(worker_id)
+        self.__outer_workers[worker_id].handler_event(close_event)
+
+    def close_inner_worker(self,worker_id):
+        if not self.__inner_workers.has_key(worker_id):
+            raise Exception('can not find this worker:' + str(worker_id))
+        close_event = forward_event.CloseConEvent(worker_id)
+        self.__inner_workers[worker_id].handler_event(close_event)
+
 
     def __connector_changed(self,con,event_handler):
         if con.con_state == connector.CON_STATE.CON_CONNECTED:

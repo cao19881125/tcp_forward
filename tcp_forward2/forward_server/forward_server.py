@@ -55,7 +55,7 @@ def run():
     def inner_acceptor_handler_event(event):
         _inner_socket, address = inner_acceptor.accept()
         _inner_socket.setblocking(0)
-        _inner_worker = _worker_manager.add_inner_worker(_inner_socket)
+        _inner_worker = _worker_manager.add_inner_worker(_inner_socket,address)
 
         recver.add_receiver(_inner_socket.fileno(), select.EPOLLIN,_inner_worker.handler_event)
         logger.info('inner worker accept fileno:' + str(_inner_socket.fileno()))
@@ -65,7 +65,9 @@ def run():
             _outer_socket, address = acceptor.accept()
             _outer_socket.setblocking(0)
             try:
-                _outer_worker = _worker_manager.add_outer_worker(_outer_socket,acceptor.mapper_ip,acceptor.mapper_port,acceptor.mapper_tag)
+                _outer_worker = _worker_manager.add_outer_worker(_outer_socket,acceptor.get_listen_port(),
+                                                                 address,acceptor.mapper_ip,acceptor.mapper_port,
+                                                                 acceptor.mapper_tag)
                 recver.add_receiver(_outer_socket.fileno(), select.EPOLLIN,_outer_worker.handler_event)
                 logger.info("Outer socket accept, worker_id:%d fileno:%d to inner port:%s:%d" %
                             (_outer_worker.get_worker_id(), _outer_socket.fileno(), acceptor.mapper_ip, acceptor.mapper_port))
@@ -80,16 +82,18 @@ def run():
 
     _worker_manager = worker_manager.WorkerManager(recver)
 
-    _port_mapper = port_mapper.PortMapper(cfg.CONF.OUTER_PORTS_FILE, build_outer_acceptors2)
+    #_port_mapper = port_mapper.FileMonitorPortMapper(cfg.CONF.OUTER_PORTS_FILE, build_outer_acceptors2)
+    _port_mapper = port_mapper.InterfaceDriverPortMapper(cfg.CONF.OUTER_PORTS_FILE, build_outer_acceptors2)
 
     recver.add_receiver(inner_acceptor.get_fileno(), select.EPOLLIN, inner_acceptor_handler_event)
 
     build_outer_acceptors2(new_ports=_port_mapper.get_outer_ports())
 
     info_collection.InfoCollection.get_instance().set_port_mapper(_port_mapper)
+    info_collection.InfoCollection.get_instance().set_worker_manager(_worker_manager)
 
     while True:
-        _port_mapper.watch_event(0.1)
+        #_port_mapper.watch_event(0.1)
         _worker_manager.all_worker_do()
         recver.run()
 

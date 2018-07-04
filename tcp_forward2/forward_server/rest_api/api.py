@@ -33,6 +33,16 @@ class RestApiHandler(object):
 
     def _delete(self,request):
         return []
+
+    def _get_params(self,request):
+        parms = {}
+        for key,value in request.params.items():
+            if type(key) == unicode:
+                key = unicode.encode(key)
+            if type(value) == unicode:
+                value = unicode.encode(value)
+            parms[key] = value
+        return parms
 class ClientPort(RestApiHandler):
 
     def _get(self,request):

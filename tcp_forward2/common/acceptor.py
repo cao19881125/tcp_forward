@@ -16,6 +16,9 @@ class Acceptor(object):
     def get_fileno(self):
         return self.__socket.fileno()
 
+    def get_listen_port(self):
+        return self.__port
+
     def accept(self):
         return self.__socket.accept()
 
