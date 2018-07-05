@@ -21,8 +21,8 @@ class InfoCollection(object):
 
         result = {}
         for port in ports:
-            ip,port,tag = self.__port_mapper.get_inner_info_by_out_port(port)
-            result[port] = {"ip":ip,"port":port,"tag":tag}
+            ip,inner_port,tag = self.__port_mapper.get_inner_info_by_out_port(port)
+            result[port] = {"ip":ip,"port":inner_port,"tag":tag}
         return str(result)
 
     def create_new_port(self,port,mapper_ip,mapper_port,mapper_tag):

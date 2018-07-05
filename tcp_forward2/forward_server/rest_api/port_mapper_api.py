@@ -3,10 +3,11 @@ import info_collection
 
 class PortMapperApi(api.RestApiHandler):
 
-    def _get(self,request):
-        return self.__get_request()
+    def _get(self,request,response):
+        result =  self.__get_request()
+        response.body = result
 
-    def _post(self,request):
+    def _post(self,request,response):
         #create new port mapper
 
         params = self._get_params(request)
@@ -14,7 +15,8 @@ class PortMapperApi(api.RestApiHandler):
             not params.has_key('mapper_ip') or \
             not params.has_key('mapper_port') or \
             not params.has_key('mapper_tag'):
-            return [str({'result':'failed','reason':'parms error'})]
+            response.body = str({'result':'failed','reason':'parms error'})
+            return
 
         try:
 
@@ -24,10 +26,12 @@ class PortMapperApi(api.RestApiHandler):
                                                                       int(params['mapper_port']),
                                                                       params['mapper_tag'])
         except Exception,e:
-            return [str({'result': 'failed', 'reason': e.message})]
-        return [str({'result': 'success'})]
+            response.body =str({'result': 'failed', 'reason': e.message})
+            return
 
-    def _delete(self,request):
+        response.body = str({'result': 'success'})
+
+    def _delete(self,request,response):
         #delete port mapper
 
         params = self._get_params(request)
@@ -43,7 +47,7 @@ class PortMapperApi(api.RestApiHandler):
 
     def __get_request(self):
         collection = info_collection.InfoCollection.get_instance()
-        return [collection.get_port_mapper_str()]
+        return collection.get_port_mapper_str()
 
 
     @classmethod

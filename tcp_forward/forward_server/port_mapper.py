@@ -87,7 +87,7 @@ class PortMapper(pyinotify.ProcessEvent):
             self.__fileno_to_port.pop(fileno)
 
     def get_outer_ports(self):
-        return [port for port in self.__port_to_info]
+        return [port for port in self.__port_to_info.keys()]
 
     def get_inner_info_by_fileno(self,fileno):
         if not self.__fileno_to_port.has_key(fileno):

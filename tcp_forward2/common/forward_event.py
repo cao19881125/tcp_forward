@@ -39,5 +39,5 @@ def event_filter(func):
         if not isinstance(f_event,ForwardEvent):
             raise Exception('event_filter event is not subclass of ForwardEvent:' + str(type(f_event)))
 
-        func(args[0],f_event,*args[2:],**kwargs)
+        return func(args[0],f_event,*args[2:],**kwargs)
     return filter

@@ -3,7 +3,7 @@ import info_collection
 
 class ClientConnectionApi(api.RestApiHandler):
 
-    def _get(self,request):
+    def _get(self,request,response):
         params = self._get_params(request)
 
         if params.has_key('client_id'):
@@ -12,18 +12,19 @@ class ClientConnectionApi(api.RestApiHandler):
             worker_id = None
         collection = info_collection.InfoCollection.get_instance()
 
-        return [str(collection.get_inner_worker_info(worker_id))]
+        response.body = str(collection.get_inner_worker_info(worker_id))
 
-    def _delete(self,request):
+    def _delete(self,request,response):
         params = self._get_params(request)
 
         try:
             if params.has_key('client_id'):
                 info_collection.InfoCollection.get_instance().close_inner_worker(int(params['client_id']))
         except Exception, e:
-            return [str({'result': 'failed', 'reason': e.message})]
+            response.body = str({'result': 'failed', 'reason': e.message})
+            return
 
-        return [str({'result': 'success'})]
+        response.body = str({'result': 'success'})
 
     @classmethod
     def factory(cls, global_conf, **kwargs):

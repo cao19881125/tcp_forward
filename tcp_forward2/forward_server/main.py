@@ -17,6 +17,8 @@ class ShowVersion():
         print req.method
         print req.POST
         print req.body
+        print req.authorization
+        
         for key,value in req.params.items():
             print "key=" + str(key) + "  value=" + str(value)
         return ["Paste Deploy LAB: Version = 1.0.0",]
