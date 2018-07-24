@@ -80,6 +80,7 @@ class WorkerManager(object):
         self.__outer_workers.pop(worker_id)
         if self.__mapper.has_key(worker_id):
             self.__mapper.pop(worker_id)
+        self.__worker_id_to_port.pop(worker_id)
 
     def remove_inner_worker(self,worker_id):
         self.__inner_workers.pop(worker_id)

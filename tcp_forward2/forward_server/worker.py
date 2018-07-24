@@ -17,6 +17,7 @@ class Worker(object):
 
     def get_worker_static_info(self):
         info = {}
+        info['id'] = self._worker_id
         local_time = time.localtime(self._recv_flow_static.get_init_time())
         info['init_time'] = "%d-%d-%d %d:%d:%d"%(local_time[0],local_time[1],local_time[2],
                                                  local_time[3],local_time[4],local_time[5])

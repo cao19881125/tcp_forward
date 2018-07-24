@@ -38,7 +38,8 @@ def token_verify(func):
         if req.url.split('/')[-1] == 'token':
             return func(*args,**kwargs)
 
-        token = req.headers.get('X-Auth-Token')
+
+        token = req.cookies.get('X-Auth-Token') or req.headers.get('X-Auth-Token')
 
         def unauthorized_reply(environ,start_response):
             res = Response()

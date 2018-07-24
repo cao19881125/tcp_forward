@@ -1,5 +1,6 @@
 import api
 import info_collection
+import json
 
 class ClientConnectionApi(api.RestApiHandler):
 
@@ -12,7 +13,7 @@ class ClientConnectionApi(api.RestApiHandler):
             worker_id = None
         collection = info_collection.InfoCollection.get_instance()
 
-        response.body = str(collection.get_inner_worker_info(worker_id))
+        response.body = json.dumps(collection.get_inner_worker_info(worker_id))
 
     def _delete(self,request,response):
         params = self._get_params(request)
@@ -20,11 +21,15 @@ class ClientConnectionApi(api.RestApiHandler):
         try:
             if params.has_key('client_id'):
                 info_collection.InfoCollection.get_instance().close_inner_worker(int(params['client_id']))
+            elif params.has_key('client_ids'):
+                clients_list = json.loads(params['client_ids'])
+                for client_id in clients_list:
+                    info_collection.InfoCollection.get_instance().close_inner_worker(int(client_id))
         except Exception, e:
             response.body = str({'result': 'failed', 'reason': e.message})
             return
 
-        response.body = str({'result': 'success'})
+        response.body = json.dumps({'result': 'success'})
 
     @classmethod
     def factory(cls, global_conf, **kwargs):

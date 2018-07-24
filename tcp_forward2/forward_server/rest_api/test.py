@@ -7,8 +7,11 @@ class Test(object):
         start_response("200 OK", [("Content-type", "text/plain")])
         # print environ
         req = Request(environ)
+        print req.method
         print req.url
+        print req.params
         res = Response()
+
 
         res.headers.add('X-Auth-Token','eyJhbGciOiJIUzI1NiIsImV4cCI6MTUzMDY4NzI2OCwiaWF0IjoxNTMwNjg2NjY4fQ.eyJpZCI6MTIzNDU2fQ.rwNSzsQ6oSHQ_RchsGAwiiyomlc6JMp1SeE7YDFL-iM')
 

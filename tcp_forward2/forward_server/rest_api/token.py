@@ -2,6 +2,7 @@
 from api import RestApiHandler
 import token_verify
 
+from webob.headers import ResponseHeaders
 class Token(RestApiHandler):
 
 
@@ -23,6 +24,7 @@ class Token(RestApiHandler):
             token = token_verify.get_token({'user':user})
             response.headers.add('X-Auth-Token',token)
 
+            response.body = str({})
         else:
             response.status = '401 Unauthorized'
             response.body = 'authentication failed'

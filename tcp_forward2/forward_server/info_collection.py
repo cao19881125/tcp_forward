@@ -16,14 +16,14 @@ class InfoCollection(object):
     def set_worker_manager(self,mamaner):
         self.__worker_manager = mamaner
 
-    def get_port_mapper_str(self):
+    def get_port_mapper(self):
         ports = self.__port_mapper.get_outer_ports()
 
         result = {}
         for port in ports:
             ip,inner_port,tag = self.__port_mapper.get_inner_info_by_out_port(port)
             result[port] = {"ip":ip,"port":inner_port,"tag":tag}
-        return str(result)
+        return result
 
     def create_new_port(self,port,mapper_ip,mapper_port,mapper_tag):
         self.__port_mapper.create_new_port(port,mapper_ip,mapper_port,mapper_tag)
@@ -57,12 +57,13 @@ class InfoCollection(object):
 
             p_list = []
             for worker in workers:
-                info = {}
-                info['channel_id'] = worker.get_worker_id()
-                address = worker.get_address()
-                info['ip'] = address[0]
-                info['port'] = address[1]
-                info['state'] = worker.get_state_str()
+                # info = {}
+                # info['channel_id'] = worker.get_worker_id()
+                # address = worker.get_address()
+                # info['ip'] = address[0]
+                # info['port'] = address[1]
+                # info['state'] = worker.get_state_str()
+                info = worker.get_worker_static_info()
                 p_list.append(info)
                 result[p] = p_list
         return result

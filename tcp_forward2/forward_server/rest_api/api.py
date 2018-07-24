@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 
 PROJECT_ROOT = os.path.abspath(os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..'))
@@ -17,10 +18,17 @@ class RestApiHandler(object):
         start_response("200 OK", [("Content-type", "text/plain")])
         req = Request(environ)
         res = Response()
+        res.headers['Content-Type'] = 'application/json'
+        params = self._get_params(req)
         if req.method == 'GET':
             self._get(req,res)
         elif req.method == 'POST':
-            self._post(req,res)
+            if params.has_key('_method') and params['_method'] == 'PUT':
+                self._put(req, res)
+            elif params.has_key('_method') and params['_method'] == 'DELETE':
+                self._delete(req, res)
+            else:
+                self._post(req,res)
         elif req.method == 'PUT':
             self._put(req,res)
         elif req.method == 'DELETE':
@@ -52,7 +60,7 @@ class ClientPort(RestApiHandler):
 
     def _get(self,request,response):
         result = {"client_port": cfg.CONF.INNER_PORT}
-        response.body = str(result)
+        response.body = json.dumps(result)
 
     @classmethod
     def factory(cls,global_conf,**kwargs):

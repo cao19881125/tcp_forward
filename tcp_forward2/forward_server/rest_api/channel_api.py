@@ -1,5 +1,6 @@
 import api
 import info_collection
+import json
 
 class ChannelApi(api.RestApiHandler):
     def _get(self, request,response):
@@ -19,11 +20,11 @@ class ChannelApi(api.RestApiHandler):
     def _get_port_info(self,port = None):
         result = info_collection.InfoCollection.get_instance().get_channel_info_by_port(port)
 
-        return str(result)
+        return json.dumps(result)
 
     def _get_channel_info(self,channel_id):
         collection = info_collection.InfoCollection.get_instance()
-        return str(collection.get_outer_worker_info(channel_id))
+        return json.dumps(collection.get_outer_worker_info(channel_id))
 
     def _delete(self,request,response):
         params = self._get_params(request)
@@ -31,10 +32,14 @@ class ChannelApi(api.RestApiHandler):
         try:
             if params.has_key('channel_id'):
                 info_collection.InfoCollection.get_instance().close_outer_worker(int(params['channel_id']))
+            elif params.has_key('channel_ids'):
+                channels_list = json.loads(params['channel_ids'])
+                for channel_id in channels_list:
+                    info_collection.InfoCollection.get_instance().close_outer_worker(int(channel_id))
         except Exception, e:
             return [str({'result': 'failed', 'reason': e.message})]
 
-        response.body = str({'result': 'success'})
+        response.body = json.dumps({'result': 'success'})
 
 
     @classmethod
