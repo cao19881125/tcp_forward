@@ -14,32 +14,29 @@ class PortMapper(pyinotify.ProcessEvent):
             self.ip = ip
             self.port = port
             self.tag = tag
+        def __eq__(self, other):
+            return self.ip == other.ip and self.port == other.port and self.tag == other.tag
 
-    def __init__(self,map_file_path,call_back):
+        def __ne__(self, other):
+            return not self.__eq__(other)
+
+    def __init__(self,map_file_path):
         # map out port to inner port,like:{1234:Coninfo('192.168.1.5',1234)}
-        #self.__port_to_info = {1234:self.Coninfo('192.168.184.128',4321)}
-        #self.__port_to_info = {1234:self.Coninfo('127.0.0.1',2222)}
-        #self.__port_to_info = {1234:self.Coninfo('127.0.0.1',80),
+        #self._port_to_info = {1234:self.Coninfo('192.168.184.128',4321)}
+        #self._port_to_info = {1234:self.Coninfo('127.0.0.1',2222)}
+        #self._port_to_info = {1234:self.Coninfo('127.0.0.1',80),
         #                       1235:self.Coninfo('127.0.0.1',22),
         #                       1236: self.Coninfo('127.0.0.1',4321)}
 
+        self._map_file_path = map_file_path
+        self._port_to_info = {}
+        self._refresh_port_info()
 
-        # map fileno to out port,like:{4:1234}
-        self.__fileno_to_port = {}
-
-        self.__map_file_path = map_file_path
-        self.__callback = call_back
-        self.__wm = pyinotify.WatchManager()
-        self.__notifier = pyinotify.Notifier(self.__wm,self)
-        self.__wm.add_watch(os.path.dirname(map_file_path), pyinotify.IN_MODIFY)
-        self.__refresh_port_info()
-        #self.__wm.watch_transient_file(map_file_path, pyinotify.IN_MODIFY, ProcessTransientFile)
-
-    def __refresh_port_info(self):
+    def _refresh_port_info(self):
         cf = ConfigParser.ConfigParser()
         temp_info = {}
         try:
-            cf.readfp(open(self.__map_file_path, 'rb'))
+            cf.readfp(open(self._map_file_path, 'rb'))
             mappers = cf.items('MAPPER')
             for item in mappers:
                 outer_port = int(item[0].lstrip().rstrip())
@@ -57,8 +54,53 @@ class PortMapper(pyinotify.ProcessEvent):
         except Exception,e:
             print e
             raise e
-        self.__port_to_info = temp_info
 
+        new_ports = [port for port in set(temp_info.keys()) - set(self._port_to_info.keys())]
+        deld_ports = [port for port in set(self._port_to_info.keys()) - set(temp_info.keys())]
+        changed_ports = []
+
+        for port in set(self._port_to_info.keys()) - set(deld_ports):
+            if self._port_to_info[port] != temp_info[port]:
+                changed_ports.append(port)
+
+        self._port_to_info = temp_info
+        return new_ports,deld_ports,changed_ports
+
+    def flush_to_file(self):
+        cf = ConfigParser.ConfigParser()
+        cf.add_section('MAPPER')
+        cf.add_section('TAG')
+        try:
+            for port,info in self._port_to_info.items():
+                cf.set('MAPPER',str(port),"%s:%d"%(info.ip,info.port))
+                cf.set('TAG',str(port),info.tag)
+
+            cf.write(open(self._map_file_path,'w'))
+        except Exception,e:
+            raise e
+
+    def get_outer_ports(self):
+        return [port for port in self._port_to_info]
+
+    def get_port_info(self,port):
+        if self._port_to_info.has_key(port):
+            return self._port_to_info[port]
+        else:
+            return None
+
+    def get_inner_info_by_out_port(self,out_port):
+        if self._port_to_info.has_key(out_port):
+            return self._port_to_info[out_port].ip,self._port_to_info[out_port].port,self._port_to_info[out_port].tag
+        else:
+            return None,None,None
+
+class FileMonitorPortMapper(PortMapper):
+    def __init__(self,map_file_path,call_back):
+        super(FileMonitorPortMapper,self).__init__(map_file_path)
+        self.__callback = call_back
+        self.__wm = pyinotify.WatchManager()
+        self.__notifier = pyinotify.Notifier(self.__wm,self)
+        self.__wm.add_watch(os.path.dirname(map_file_path), pyinotify.IN_MODIFY)
 
     def watch_event(self,time_out_ms):
         try:
@@ -70,38 +112,37 @@ class PortMapper(pyinotify.ProcessEvent):
                 return False
         except Exception,e:
             print 'process_events exception'
-
+            print e.message
 
     def process_IN_MODIFY(self, event):
         mod_file = os.path.join(event.path, event.name)
-        if mod_file == self.__map_file_path:
+        if mod_file == self._map_file_path:
             print  "Modify file: %s " % os.path.join(event.path, event.name)
-            self.__refresh_port_info()
-            self.__callback()
+            new_ports,deld_ports,changed_ports = self._refresh_port_info()
 
-    def add_fileno_to_port(self,fileno,port):
-        self.__fileno_to_port[fileno] = port
+            self.__callback(new_ports, deld_ports, changed_ports)
 
-    def del_fileno_to_port(self,fileno):
-        if self.__fileno_to_port.has_key(fileno):
-            self.__fileno_to_port.pop(fileno)
+class InterfaceDriverPortMapper(PortMapper):
+    def __init__(self, map_file_path, call_back):
+        super(InterfaceDriverPortMapper,self).__init__(map_file_path)
+        self.__callback = call_back
+        
+    def create_new_port(self,port,mapper_ip,mapper_port,mapper_tag):
+        if self._port_to_info.has_key(port):
+            raise Exception('Create port mapper failed,port:' + str(port) + ' already exists')
 
-    def get_outer_ports(self):
-        return [port for port in self.__port_to_info.keys()]
+        self._port_to_info[port] = self.Coninfo(mapper_ip,mapper_port,mapper_tag)
 
-    def get_inner_info_by_fileno(self,fileno):
-        if not self.__fileno_to_port.has_key(fileno):
-            return None,None,None
+        self.__callback(new_ports = [port])
 
-        out_port = self.__fileno_to_port[fileno]
+        self.flush_to_file()
 
-        if not self.__port_to_info.has_key(out_port):
-            return None,None,None
+    def delete_port(self,port):
+        if not self._port_to_info.has_key(port):
+            raise Exception('Port:' + str(port) + ' not exists')
 
-        return self.__port_to_info[out_port].ip,self.__port_to_info[out_port].port,self.__port_to_info[out_port].tag
+        self._port_to_info.pop(port)
 
-    def get_inner_info_by_out_port(self,out_port):
-        if self.__port_to_info.has_key(out_port):
-            return self.__port_to_info[out_port].ip,self.__port_to_info[out_port].port,self.__port_to_info[out_port].tag
-        else:
-            return None,None,None
+        self.__callback(deld_ports = [port])
+
+        self.flush_to_file()

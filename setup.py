@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = "tcp-forward",
-    version = "1.0.2",
+    version = "1.0.3",
     keywords = ("tcp-forward"),
     description = "forward data from an established tcp connection",
     license = "MIT",
@@ -18,6 +18,6 @@ setup(
     include_package_data = True,
     platforms = "any",
     install_requires = ['enum','argparse','ConfigParser','pyinotify'],
-    data_files = [('/etc/tcp-forward',['./forward_server.cfg','./forward_client.cfg','./port_mapper.cfg'])],
+    data_files = [('/etc/tcp-forward',['./etc/forward_server.cfg','./etc/forward_client.cfg','./etc/port_mapper.cfg','./etc/api-paste.ini'])],
     scripts=['tools/tcp-forward']
 )

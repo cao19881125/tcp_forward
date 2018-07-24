@@ -16,8 +16,18 @@ class Acceptor(object):
     def get_fileno(self):
         return self.__socket.fileno()
 
+    def get_listen_port(self):
+        return self.__port
+
     def accept(self):
         return self.__socket.accept()
 
     def close(self):
         self.__socket.close()
+
+class PortMapperAcceptor(Acceptor):
+    def __init__(self,ip,port,mapper_ip,mapper_port,mapper_tag):
+        super(PortMapperAcceptor,self).__init__(ip,port)
+        self.mapper_ip = mapper_ip
+        self.mapper_port = mapper_port
+        self.mapper_tag = mapper_tag

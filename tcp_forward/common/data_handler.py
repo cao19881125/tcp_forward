@@ -33,7 +33,7 @@ class DataHandler(object):
             ring_buffer.set_clear()
         except protocol_handler.ParseTimeout,e:
             #print 'parse timeout,current buffer:'
-            logger.debug(e.message)
+            #logger.debug(e.message)
             ring_buffer.set_time_out()
             if ring_buffer.over_max_time():
                 protocol_parse.pop_header(ring_buffer)
@@ -59,3 +59,11 @@ class DataHandler(object):
             return None
 
         return parsed_data
+
+    def get_forward_datas(self, ring_buffer):
+        forward_datas = []
+        while True:
+            parsed_data = self.parse_data(ring_buffer)
+            if parsed_data == None:
+                return tuple(forward_datas)
+            forward_datas.append(parsed_data)

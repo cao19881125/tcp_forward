@@ -1,5 +1,7 @@
 import sys
 from oslo_config import cfg
+from forward_server.main import main as server_main
+from forward_client.forward_client import main as client_main
 
 
 run_type_opt = [
@@ -7,22 +9,22 @@ run_type_opt = [
 ]
 cfg.CONF.register_cli_opts(run_type_opt)
 
-def main(args):
+def main():
 
 
-    cfg.CONF(args=args)
+    cfg.CONF(sys.argv[1:])
 
     print cfg.CONF.run_type
     if cfg.CONF.run_type == 'server':
         #server_main(args.cfg_file)
-        pass
+        server_main()
     elif cfg.CONF.run_type == 'client':
         #client_main(args.cfg_file)
-        pass
+        client_main()
     else:
         print 'run_type error'
 
 
 if __name__ == '__main__':
 
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main())

@@ -53,7 +53,9 @@ class ProtocolHandler(object):
         inner_port = data.inner_port
         msg = data.data
 
+
         msg_len = len(msg)
+
         buf_len = 19+msg_len
 
         result_buf = bytearray(buf_len)
