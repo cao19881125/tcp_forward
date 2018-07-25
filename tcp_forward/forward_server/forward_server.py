@@ -1,5 +1,6 @@
 import os
 import sys
+
 from oslo_config import cfg
 
 PROJECT_ROOT = os.path.abspath(os.path.join(
@@ -15,7 +16,7 @@ from common import acceptor
 import port_mapper
 import conf
 import worker_manager
-import info_collection
+from rest_api import info_collection
 
 logger = logging.getLogger('my_logger')
 
