@@ -17,7 +17,7 @@ setup(
     packages = find_packages(),
     include_package_data = True,
     platforms = "any",
-    install_requires = ['enum','argparse','ConfigParser','pyinotify'],
+    install_requires = ['enum','argparse','ConfigParser','pyinotify','oslo_config','oslo_service','webob','gevent','itsdangerous'],
     data_files = [('/etc/tcp-forward',['./etc/forward_server.cfg','./etc/forward_client.cfg','./etc/port_mapper.cfg','./etc/api-paste.ini'])],
     scripts=['tools/tcp-forward']
 )
