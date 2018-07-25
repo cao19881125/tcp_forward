@@ -87,20 +87,25 @@ LOG_LEVEL=INFO
 BANDWIDTH=100
 ```
 
-- 在/etc/tcp-forward/port_mapper.cfg中配置外网端口到内网的映射，格式为：外网端口=内网ip:内网端口，如下
+- 在/etc/tcp-forward/port_mapper.cfg中配置外网端口到内网的映射，格式为：外网端口=内网ip:内网端口，以及端口对应的client tag，如下
 
 ```
 [MAPPER]
 1234=192.168.10.5:80
 4444=192.168.105:22
+
+[TAG]
+1234=default
+4444=default
 ```
 #### client
-- 在/etc/tcp-forward/forward_client.cfg中配置forward_server的ip和端口以及日志级别
+- 在/etc/tcp-forward/forward_client.cfg中配置forward_server的ip和端口以及日志级别以及client的tag
 ```
 [DEFAULT]
 SERVER_IP=221.10.12.34
 SERVER_PORT=1111
 LOG_LEVEL=DEBUG
+TAG=default
 ```
 
 
@@ -109,25 +114,25 @@ LOG_LEVEL=DEBUG
 #### docker启动
 ##### server
 ```
-docker run -t -d --name "forward_server" --network host -v /etc/tcp-forward/:/etc/tcp-forward/ -v /var/log/tcp_forward/:/var/log/tcp_forward/ --restart always tcp-forward:latest tcp-forward server /etc/tcp-forward/forward_server.cfg
+docker run -t -d --name "forward_server" --network host -v /etc/tcp-forward/:/etc/tcp-forward/ -v /var/log/tcp_forward/:/var/log/tcp_forward/ --restart always tcp-forward:latest tcp-forward --run_type server --config-file /etc/tcp-forward/forward_server.cfg
 ```
 ##### client
 
 ```
-docker run -t -d --name "forward_client" --network host -v /etc/tcp-forward/:/etc/tcp-forward/ -v /var/log/tcp_forward/:/var/log/tcp_forward/ --restart always cao19881125/tcp-forward:latest tcp-forward client /etc/tcp-forward/forward_client.cfg
+docker run -t -d --name "forward_client" --network host -v /etc/tcp-forward/:/etc/tcp-forward/ -v /var/log/tcp_forward/:/var/log/tcp_forward/ --restart always cao19881125/tcp-forward:latest tcp-forward --run_type client --config-file /etc/tcp-forward/forward_client.cfg
 ```
 
 #### 命令启动
 ##### server
 
 ```
-tcp-forward server /etc/tcp-forward/forward_server.cfg
+tcp-forward --run_type server --config-file  /etc/tcp-forward/forward_server.cfg
 ```
 ##### client
 
 
 ```
-tcp-forward client /etc/tcp-forward/forward_client.cfg
+tcp-forward --run_type client --config-file  /etc/tcp-forward/forward_client.cfg
 ```
 
 
