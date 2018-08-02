@@ -3,6 +3,8 @@ from api import RestApiHandler
 import token_verify
 
 from webob.headers import ResponseHeaders
+import user_pass
+
 class Token(RestApiHandler):
 
 
@@ -20,17 +22,38 @@ class Token(RestApiHandler):
         user = body['user']
         password = body['password']
 
-        if self.__verify_user(user,password):
-            token = token_verify.get_token({'user':user})
-            response.headers.add('X-Auth-Token',token)
+        up = user_pass.UserPass()
+        try:
+            up = user_pass.UserPass()
+            up.check_pass_word(user,password)
+            token = token_verify.get_token({'user': user})
+            response.headers.add('X-Auth-Token', token)
 
             response.body = str({})
-        else:
+        except user_pass.NoUserException:
             response.status = '401 Unauthorized'
-            response.body = 'authentication failed'
+            response.body = 'authentication failed:no uesr'
+        except user_pass.PassErrorException:
+            response.status = '401 Unauthorized'
+            response.body = 'authentication failed:password error'
+
+        # if self.__verify_user(user,password):
+        #     token = token_verify.get_token({'user':user})
+        #     response.headers.add('X-Auth-Token',token)
+        #
+        #     response.body = str({})
+        # else:
+        #     response.status = '401 Unauthorized'
+        #     response.body = 'authentication failed'
 
     def __verify_user(self,user,password):
-        return user == 'cyt' and password == '123456'
+        #return user == 'cyt' and password == '123456'
+        try:
+            up = user_pass.UserPass()
+            up.check_pass_word(user,password)
+        except user_pass.NoUserException:
+            return False
+
 
 
     @classmethod
