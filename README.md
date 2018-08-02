@@ -98,6 +98,18 @@ BANDWIDTH=100
 1234=default
 4444=default
 ```
+
+- 配置用户
+
+```
+# vim /etc/tcp-forward/user_file
+[USER]
+test1=123456
+test2=654321
+```
+- 格式为用户名=密码
+- 修改完后不需要重启
+
 #### client
 - 在/etc/tcp-forward/forward_client.cfg中配置forward_server的ip和端口以及日志级别以及client的tag
 ```
@@ -138,3 +150,6 @@ tcp-forward --run_type client --config-file  /etc/tcp-forward/forward_client.cfg
 
 ### 查看日志
 - 日志生成在/var/log/tcp_forward 目录下面
+
+## 配套的web项目
+> 可以使tcp-forward-web进行设置和监控，项目地址 https://github.com/cao19881125/tcp-forward-web
