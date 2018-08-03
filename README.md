@@ -76,6 +76,11 @@ docker pull cao19881125/tcp-forward:latest
 
 
 ### 配置
+> 注意，docker启动由于把/etc/tcp-forward目录mount出来，导致没有配置文件，先执行下面的命令安装配置文件
+
+```
+pip install tcp-forward
+```
 #### server
 - 在/etc/tcp-forward/forward_server.cfg中配置forward_client连入的端口,日志级别,带宽（以实际带宽配置，单位是M）
 
@@ -83,8 +88,12 @@ docker pull cao19881125/tcp-forward:latest
 [DEFAULT]
 INNER_PORT=1111
 OUTER_PORTS_FILE=/etc/tcp-forward/port_mapper.cfg
-LOG_LEVEL=INFO
+LOG_LEVEL=DEBUG
+#minimal network BANDWIDTH in Mb
 BANDWIDTH=100
+
+api_paste_config=/etc/tcp-forward/api-paste.ini
+user_file=/etc/tcp-forward/user_file
 ```
 
 - 在/etc/tcp-forward/port_mapper.cfg中配置外网端口到内网的映射，格式为：外网端口=内网ip:内网端口，以及端口对应的client tag，如下
@@ -124,6 +133,8 @@ TAG=default
 
 ### 启动
 #### docker启动
+
+
 ##### server
 ```
 docker run -t -d --name "forward_server" --network host -v /etc/tcp-forward/:/etc/tcp-forward/ -v /var/log/tcp_forward/:/var/log/tcp_forward/ --restart always tcp-forward:latest tcp-forward --run_type server --config-file /etc/tcp-forward/forward_server.cfg
