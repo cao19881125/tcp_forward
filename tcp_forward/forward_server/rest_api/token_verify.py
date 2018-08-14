@@ -15,7 +15,6 @@ def get_token(data):
     return s.dumps(data)
 
 
-
 def verify_auth_token(token):
     s = Serializer(ENCRYPT_KEY)
     try:

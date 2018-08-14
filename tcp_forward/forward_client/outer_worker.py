@@ -7,6 +7,7 @@ import traceback
 import data_handler
 from common import forward_event
 from common import forward_data
+import time
 
 logger = logging.getLogger('my_logger')
 
@@ -25,6 +26,7 @@ class OuterWorker(object):
         self.__data_handler = data_handler.OuterDataHandler()
         self.__sourth_interface_channel = sourth_interface_channel
         self.__connector_change_callback = connector_change_callback
+        self.__last_heart_beat_time = time.time()
 
     def __north_interface_event(self, event):
         if self.__state == self.State.CONNECTING:
@@ -78,6 +80,15 @@ class OuterWorker(object):
             elif data.data_type == forward_data.DATA_TYPE.CLOSE_CONNECTION:
                 close_event = forward_event.CloseConEvent(data.id)
                 self.__sourth_interface_channel(close_event)
+            elif data.data_type == forward_data.DATA_TYPE.HEART_BEAT:
+                logger.debug('OuterWorker recv heartbeat reply')
+                self.__last_hear_beat_reply_time = time.time()
+    def send_heart_beat(self):
+        try:
+            self.__data_handler.send_heart_beat(self.__connector)
+        except Exception, e:
+            logger.error("OuterrWorker current state:WORKING send heartbeat error,change state to DISCONNECTED")
+            self.__state = self.State.DISCONNECTED
 
     def __sourth_interface_transdata_event(self, event):
         if not isinstance(event,forward_event.TransDataEvent):
@@ -119,6 +130,12 @@ class OuterWorker(object):
                 self.__state = self.State.DISCONNECTED
                 logger.debug("OuterWorker current state:WORKING change state to DONE due connector state error:%s"%(str(self.__connector.con_state)) )
                 return
+            else:
+                current_time = time.time()
+                if current_time - self.__last_heart_beat_time >= 30:
+                    self.send_heart_beat()
+                    self.__last_heart_beat_time = current_time
+                    logger.debug("OuterWorker send hearbeat")
         elif self.__state == self.State.DISCONNECTED:
             close_event = forward_event.CloseConEvent(0)
             self.__sourth_interface_channel(close_event)

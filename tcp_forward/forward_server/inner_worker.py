@@ -24,6 +24,7 @@ class InnerWorker(worker.Worker):
         self.__data_handler = data_handler.InnerDataHandler()
         self.__ring_buffer = ring_buffer.TimeoutRingbuffer(10240 * 10240, 5)
         self._connector_change_callback = connector_change_callback
+        self.__tag = 'NONE'
 
     def has_done(self):
         return self.__state == self.State.DONE
@@ -125,6 +126,13 @@ class InnerWorker(worker.Worker):
 
         self.__handle_data()
 
+    def send_heart_beat_reply(self):
+        try:
+            self.__data_handler.send_heart_beat_reply(self._connector)
+        except Exception, e:
+            logger.error("InnerWorker %d current state:WORKING send heartbeat reply error,change state to DISCONNECTED"%(self._worker_id))
+            self.__state = self.State.DISCONNECTED
+
     def __handle_data(self):
         datas = self.__data_handler.get_forward_datas(self.__ring_buffer)
         for data in datas:
@@ -136,7 +144,8 @@ class InnerWorker(worker.Worker):
                 close_event = forward_event.CloseConEvent(data.id)
                 self.__north_interface_channel(close_event)
             elif data.data_type == forward_data.DATA_TYPE.HEART_BEAT:
-                pass
+                self.send_heart_beat_reply()
+                logger.info("InnerWorker %d send heartbeat reply "%(self._worker_id))
 
     @forward_event.event_filter
     def handler_event(self,event):

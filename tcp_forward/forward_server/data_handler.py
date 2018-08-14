@@ -106,3 +106,13 @@ class InnerDataHandler(DataHandler):
                     # print 'inner_connector send package'
                     # tools.print_hex_buf(send_package)
             ori += self.__one_package_size
+
+    def send_heart_beat_reply(self, inner_connector):
+        forw_data = forward_data.ForwardData(forward_data.DATA_TYPE.HEART_BEAT, 0, '0.0.0.0', 0, '')
+        protocol_parser = ProtocolHandler()
+        send_package = protocol_parser.build_data(forw_data)
+        if inner_connector and inner_connector.con_state == connector.CON_STATE.CON_CONNECTED:
+            send_bytes = inner_connector.send(send_package)
+            if send_bytes <= 0:
+                logger.error("HeartBeat send failed")
+                raise Exception("Send HeartBeat failed")
